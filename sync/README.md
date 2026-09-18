@@ -62,6 +62,24 @@ l'application : onglet *Données* → *Synchronisation* → *Configurer*.
 
 Répète sur l'iPad avec la **même adresse et la même clé**.
 
+## Le relais vers la LNB
+
+Le même Worker expose deux routes publiques qui relaient l'API de la LNB :
+
+```
+GET /lnb/standings?cid=317
+GET /lnb/calendar?abbrev=PROA&div=1&year=2026
+```
+
+Le navigateur ne peut pas interroger `api-prod.lnb.fr` directement (blocage CORS) ;
+le Worker, si. C'est ce qui rend le **classement et le calendrier actualisables en
+direct**, sans attendre la regénération quotidienne du fichier de données.
+Les réponses sont mises en cache une minute côté Cloudflare.
+
+Conséquence à connaître : **l'actualisation en direct n'est active que si la
+synchronisation est configurée**, puisqu'elle utilise la même adresse. Sans elle,
+le classement affiché reste celui du fichier, mis à jour chaque matin.
+
 ## Comment ça se comporte
 
 | Situation | Ce qui se passe |
@@ -70,6 +88,7 @@ Répète sur l'iPad avec la **même adresse et la même clé**.
 | Coupure réseau | L'appareil continue seul ; l'envoi se fait au retour de la connexion |
 | Les deux modifiés hors ligne | Une fenêtre demande laquelle garder — **jamais de fusion silencieuse** |
 | Réveil de l'application | Récupération immédiate au retour sur l'onglet |
+| Classement et calendrier | Rafraîchis à la sélection d'une équipe, puis chaque minute |
 
 ## Sécurité
 

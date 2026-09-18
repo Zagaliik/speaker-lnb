@@ -354,6 +354,75 @@ def stats_saison_precedente(api, year, divisions, log=print):
     return index, prev
 
 
+
+# ---------------------------------------------------------------- classement et calendrier
+def classement(api, cid):
+    """Classement general d'une competition, avec les cinq derniers resultats."""
+    try:
+        r = api.call("altrstats/getStandingByCompetition",
+                     {"competition_external_id": cid,
+                      "competition_filter_name": "GENERAL",
+                      "round_numbers": ""})
+    except Exception:
+        return []
+    lignes = []
+    for poule in (r.get("data") or []):
+        for l in (poule.get("data") or []):
+            eq = l.get("team") or {}
+            lignes.append({
+                "rang": l.get("rank"),
+                "equipe": eq.get("external_id"),
+                "nom": eq.get("team_name"),
+                "joues": l.get("s_games"),
+                "v": l.get("s_wins"),
+                "d": l.get("s_losses"),
+                "diff": l.get("plus_minus"),
+                "pour": l.get("s_points"),
+                "contre": l.get("s_points_against"),
+                "dom": [l.get("s_home_wins"), l.get("s_home_losses")],
+                "ext": [l.get("s_away_wins"), l.get("s_away_losses")],
+                # result_placing : 1 = victoire, 0 = defaite
+                "cinq": [{"texte": x.get("notes"), "gagne": x.get("result_placing") == 1}
+                         for x in (l.get("last_five_details") or [])],
+            })
+    return lignes
+
+
+def calendrier(api, abbrev, division, year):
+    """Calendrier complet d'une competition : un seul appel pour toute la saison."""
+    try:
+        r = api.call("match/v3/getCalendar",
+                     {"year": str(year), "competition_abbrev": abbrev,
+                      "division_external_id": str(division), "team_external_id": 0,
+                      "round_number": 0, "phase_id": 0, "tournament_number": 0,
+                      "direction": "initial", "limit": 500})
+    except Exception:
+        return []
+    matchs = []
+    for jour in (r.get("data") or []):
+        for m in (jour.get("data") or []):
+            eqs = m.get("teams") or []
+            if len(eqs) < 2:
+                continue
+            def cote(t):
+                return {"id": t.get("external_id"), "nom": t.get("team_name"),
+                        "code": t.get("team_code"),
+                        "score": t.get("score_string") or None}
+            matchs.append({
+                "date": m.get("match_date"),
+                # On garde l'horodatage UTC complet : l'heure locale se calcule
+                # dans l'application, sinon un match de 20h s'afficherait a 18h.
+                "utc": m.get("match_time_utc"),
+                "statut": m.get("match_status"),
+                "journee": m.get("display_round") or m.get("round_description"),
+                "salle": m.get("venue_name") or None,
+                "dom": cote(eqs[0]),          # l'API donne le recevant en premier
+                "ext": cote(eqs[1]),
+            })
+    matchs.sort(key=lambda x: (x["date"] or "", x["utc"] or ""))
+    return matchs
+
+
 def scrape(year, divisions, avec_images=True, log=print):
     api = Lnb()
     log("Statistiques de la saison precedente...")
@@ -416,6 +485,9 @@ def scrape(year, divisions, avec_images=True, log=print):
             "division": comp["division_external_id"],
             "nom": comp["competition_name"],
             "abrev": comp["competition_abbrev"],
+            "classement": classement(api, comp["external_id"]),
+            "calendrier": calendrier(api, comp["competition_abbrev"],
+                                     comp["division_external_id"], year),
             "equipes": [],
         }
         for t, roster, staff in equipes:

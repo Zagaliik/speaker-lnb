@@ -8,13 +8,91 @@
  * D1 (et non KV) parce que KV est a coherence differee : une ecriture peut mettre
  * jusqu'a une minute a se propager, ce qui est incompatible avec "instantane".
  *
+ * Il sert aussi de relais vers l'API de la LNB : le navigateur ne peut pas
+ * l'interroger directement (CORS), alors que le Worker le peut. C'est ce qui rend
+ * le classement et le calendrier actualisables en direct, sans attendre la
+ * regeneration quotidienne du fichier de donnees.
+ *
  * Protocole :
  *   GET  /            -> { rev, updatedAt, device, data }
  *   PUT  /            <- { baseRev, device, data, force? }
  *                     -> 200 { rev, updatedAt }
  *                     -> 409 { erreur:"conflit", rev, updatedAt, device, data }
  * La cle passe dans l'en-tete X-Sync-Key (ou ?k= pour les requetes simples).
+ *
+ *   GET  /lnb/standings?cid=317
+ *   GET  /lnb/calendar?abbrev=PROA&div=1&year=2026
+ * Ces deux routes sont publiques : elles ne renvoient que des donnees deja
+ * publiques sur lnb.fr, et n'exposent aucune preparation.
  */
+
+const API = "https://api-prod.lnb.fr/";
+
+async function jeton() {
+  const r = await fetch("https://lnb.fr/api/token", {
+    headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
+  });
+  if (!r.ok) throw new Error("jeton indisponible");
+  return (await r.json()).token;
+}
+
+async function appelLnb(chemin, corps) {
+  const t = await jeton();
+  const r = await fetch(API + chemin, {
+    method: corps ? "POST" : "GET",
+    headers: {
+      Authorization: "Bearer " + t,
+      device_type: "web",
+      Origin: "https://lnb.fr",
+      Referer: "https://lnb.fr/",
+      ...(corps ? { "Content-Type": "application/json" } : {}),
+    },
+    body: corps ? JSON.stringify(corps) : undefined,
+  });
+  if (!r.ok) throw new Error("LNB " + r.status);
+  return r.json();
+}
+
+/** Relais LNB, avec un cache court : le classement ne bouge qu'apres un match. */
+async function relais(url, request) {
+  const cache = caches.default;
+  const clef = new Request(url.toString(), { method: "GET" });
+  const garde = await cache.match(clef);
+  if (garde) return garde;
+
+  let charge;
+  try {
+    if (url.pathname === "/lnb/standings") {
+      const cid = Number(url.searchParams.get("cid"));
+      if (!cid) return reponse({ erreur: "cid_absent" }, 400);
+      charge = await appelLnb("altrstats/getStandingByCompetition", {
+        competition_external_id: cid,
+        competition_filter_name: "GENERAL",
+        round_numbers: "",
+      });
+    } else {
+      const abbrev = url.searchParams.get("abbrev") || "";
+      const div = url.searchParams.get("div") || "";
+      const year = url.searchParams.get("year") || "";
+      if (!abbrev || !div || !year) return reponse({ erreur: "parametres_absents" }, 400);
+      charge = await appelLnb("match/v3/getCalendar", {
+        year: String(year), competition_abbrev: abbrev,
+        division_external_id: String(div), team_external_id: 0,
+        round_number: 0, phase_id: 0, tournament_number: 0,
+        direction: "initial", limit: 500,
+      });
+    }
+  } catch (e) {
+    return reponse({ erreur: "lnb_injoignable", detail: String(e.message || e) }, 502);
+  }
+
+  const res = new Response(JSON.stringify(charge), {
+    headers: { ...CORS, "Content-Type": "application/json; charset=utf-8",
+               "Cache-Control": "public, max-age=60" },
+  });
+  await cache.put(clef, res.clone());
+  return res;
+}
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -35,6 +113,13 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
 
     const url = new URL(request.url);
+
+    // Relais LNB : pas de cle, ces donnees sont publiques.
+    if (url.pathname.startsWith("/lnb/")) {
+      if (request.method !== "GET") return reponse({ erreur: "methode_non_supportee" }, 405);
+      return relais(url, request);
+    }
+
     const cle = request.headers.get("X-Sync-Key") || url.searchParams.get("k") || "";
 
     // La cle fait office de mot de passe : on impose une longueur serieuse.

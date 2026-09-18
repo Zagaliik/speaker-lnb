@@ -12,8 +12,9 @@ l'application. **Tout fonctionne sans réseau une fois l'application installée.
 | `index.html` | L'application entière (aucune dépendance à installer) |
 | `sw.js` | Cache hors ligne |
 | `manifest.webmanifest`, `icon-*.png` | Installation sur l'écran d'accueil |
-| `lnb-data.json` | Les données LNB : 4 compétitions, 72 équipes, 862 joueurs, 72 logos et 445 photos (3,8 Mo) |
+| `lnb-data.json` | Les données LNB : 4 compétitions, 72 équipes, 862 joueurs, 942 matchs, classements, 72 logos et 443 photos (4,3 Mo) |
 | `scraper/scrape_lnb.py` | Le script qui régénère `lnb-data.json` |
+| `sync/` | Service Cloudflare : synchronisation Mac ↔ iPad et relais vers l'API LNB |
 | `build.py` | Fabrique une version autonome dans `dist/` (données intégrées à la page) |
 | `.github/workflows/update-lnb.yml` | Mise à jour automatique chaque matin |
 
