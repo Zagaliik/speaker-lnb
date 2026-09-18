@@ -173,23 +173,32 @@ li.is-five{background:var(--accent-soft)}
 .btn.sm{padding:5px 10px;font-size:12px}
 
 /* ---------- forme de l'équipe ---------- */
-.forme{
-  display:flex;flex-wrap:wrap;gap:9px 12px;align-items:center;padding:9px 13px;
-  border-bottom:1px solid var(--line);background:var(--surface-2);font-size:12.5px;
+.rangpill{
+  font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--accent);flex:none;
+  border:1px solid var(--accent);border-radius:999px;padding:1px 8px;white-space:nowrap;
+  font-variant-numeric:tabular-nums;
 }
-.rang{font-family:var(--display);font-size:21px;font-weight:700;color:var(--accent);line-height:1}
-.rang sup{font-size:11px}
-.bilan{color:var(--ink-2);font-variant-numeric:tabular-nums;font-weight:500}
-.cinq{display:flex;gap:3px;margin-left:auto}
+.rangpill sup{font-size:8px;vertical-align:super}
+.cinq{display:flex;gap:3px;flex:none}
+.rosterhead .cinq{margin-left:auto}
 .cinq span{
-  width:19px;height:19px;border-radius:4px;display:grid;place-items:center;
-  font-size:10.5px;font-weight:700;color:#fff;font-family:var(--display);
+  width:17px;height:17px;border-radius:4px;display:grid;place-items:center;
+  font-size:9.5px;font-weight:700;color:#fff;font-family:var(--display);
 }
 .cinq .g{background:var(--ok)}
 .cinq .p{background:var(--danger)}
-.prochain{width:100%;color:var(--muted);font-size:12px;line-height:1.5}
-.prochain b{color:var(--ink-2);font-weight:600}
-.forme .vide{color:var(--muted);font-style:italic}
+.rosterhead .infobtn{
+  flex:none;border:1px solid var(--line);border-radius:999px;padding:1px 9px;
+  background:var(--surface);color:var(--ink-2);font-size:10.5px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.fiche{display:flex;flex-direction:column;gap:3px}
+.fiche .t{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-top:6px}
+.fiche .r{display:flex;gap:9px;align-items:baseline;font-size:13.5px}
+.fiche .r .p{width:17px;height:17px;border-radius:4px;display:grid;place-items:center;font-size:9.5px;font-weight:700;color:#fff;font-family:var(--display);flex:none}
+.fiche .r .p.g{background:var(--ok)}
+.fiche .r .p.d{background:var(--danger)}
+.fiche .q{color:var(--muted);font-size:12.5px}
 
 /* ---------- officiels de la rencontre ---------- */
 .offmatch{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:13px}
@@ -874,51 +883,66 @@ function dateFr(m){
   return jour + " · " + d.toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"}).replace(":", "h");
 }
 
-/** Bandeau : rang, bilan, cinq derniers résultats, prochaines échéances. */
-function blocForme(t, side){
-  if(!side || side.compId === "custom") return null;
+/** Fiche équipe : tout ce qui prenait de la place à l'écran, à un clic. */
+function ficheEquipe(t, side){
   var comp = competition(side.compId);
   var l = ligneClassement(comp, t.id);
   var mm = matchsEquipe(comp, t.id);
-  if(!l && !mm.prochains.length) return null;
+  dialogue(function(dg, fermer){
+    dg.appendChild(el("h3", null, t.nom));
+    var body = el("div", "body");
+    var f = el("div", "fiche");
 
-  var box = el("div", "forme");
-  if(l && l.rang){
-    var r = el("span", "rang", String(l.rang));
-    if(l.rang === 1) r.appendChild(el("sup", null, "er")); else r.appendChild(el("sup", null, "e"));
-    box.appendChild(r);
-  }
-  if(l && (l.joues || l.v || l.d)){
-    var bilan = l.v + "V - " + l.d + "D";
-    if(l.diff != null && l.joues) bilan += "  ·  " + (l.diff > 0 ? "+" : "") + l.diff;
-    box.appendChild(el("span", "bilan", bilan));
-  } else if(l){
-    box.appendChild(el("span", "vide", "saison non commencée"));
-  }
+    if(l && l.rang){
+      var titre = l.rang + (l.rang === 1 ? "er" : "e") + " de " + (comp ? comp.nom : "sa compétition");
+      f.appendChild(el("p", "msg", titre));
+      if(l.joues){
+        var det = l.v + " victoires, " + l.d + " défaites";
+        if(l.diff != null) det += "  ·  différence " + (l.diff > 0 ? "+" : "") + l.diff;
+        f.appendChild(el("div", "q", det));
+        if(l.dom && l.ext){
+          f.appendChild(el("div", "q",
+            "À domicile " + l.dom[0] + "-" + l.dom[1] + "  ·  À l'extérieur " + l.ext[0] + "-" + l.ext[1]));
+        }
+      } else {
+        f.appendChild(el("div", "q", "Saison pas encore commencée."));
+      }
+    }
 
-  var cinq = (l && l.cinq) ? l.cinq : [];
-  if(cinq.length){
-    var c = el("div", "cinq");
-    cinq.forEach(function(x){
-      var sp = el("span", x.gagne ? "g" : "p", x.gagne ? "V" : "D");
-      sp.title = x.texte || "";
-      c.appendChild(sp);
-    });
-    box.appendChild(c);
-  }
+    if(l && l.cinq && l.cinq.length){
+      f.appendChild(el("div", "t", "Cinq derniers résultats"));
+      l.cinq.forEach(function(x){
+        var r = el("div", "r");
+        r.appendChild(el("span", "p " + (x.gagne ? "g" : "d"), x.gagne ? "V" : "D"));
+        r.appendChild(el("span", null, x.texte || ""));
+        f.appendChild(r);
+      });
+    }
 
-  mm.prochains.forEach(function(m, i){
-    var chezNous = m.dom && m.dom.id === t.id;
-    var adv = chezNous ? m.ext : m.dom;
-    var d = el("div", "prochain");
-    d.appendChild(document.createTextNode(i === 0 ? "Prochain : " : "Puis : "));
-    d.appendChild(el("b", null, dateFr(m)));
-    d.appendChild(document.createTextNode(
-      "  " + (chezNous ? "reçoit " : "à ") + ((adv && adv.nom) || "?")
-      + (m.journee ? "  ·  " + m.journee : "")));
-    box.appendChild(d);
+    if(mm.prochains.length){
+      f.appendChild(el("div", "t", "Prochaines rencontres"));
+      mm.prochains.forEach(function(m){
+        var chezNous = m.dom && m.dom.id === t.id;
+        var adv = chezNous ? m.ext : m.dom;
+        var r = el("div", "r");
+        r.appendChild(el("b", null, dateFr(m)));
+        r.appendChild(el("span", "q",
+          (chezNous ? "reçoit " : "à ") + ((adv && adv.nom) || "?") + (m.journee ? "  ·  " + m.journee : "")));
+        f.appendChild(r);
+      });
+    } else {
+      f.appendChild(el("div", "t", "Prochaines rencontres"));
+      f.appendChild(el("div", "q", "Aucune rencontre à venir au calendrier."));
+    }
+
+    body.appendChild(f);
+    dg.appendChild(body);
+    var foot = el("div", "foot");
+    var b = el("button", "btn primary", "Fermer");
+    b.addEventListener("click", function(){ fermer(null); });
+    foot.appendChild(b);
+    dg.appendChild(foot);
   });
-  return box;
 }
 
 /* ---- actualisation en direct par le relais du service de synchronisation ---- */
@@ -1029,6 +1053,15 @@ function renderTeam(mount, side, sideLabel){
   h.appendChild(teamLogo(t));
   h.appendChild(el("h2", null, t ? t.nom : "Aucune équipe"));
   if(t){
+    var cl = (side.compId === "custom") ? null : ligneClassement(competition(side.compId), t.id);
+    if(cl && cl.rang){
+      var pill = el("span", "rangpill");
+      pill.appendChild(document.createTextNode(String(cl.rang)));
+      pill.appendChild(el("sup", null, cl.rang === 1 ? "er" : "e"));
+      if(cl.joues) pill.appendChild(document.createTextNode(" · " + cl.v + "V-" + cl.d + "D"));
+      pill.title = "Classement " + (competition(side.compId) || {}).nom;
+      h.appendChild(pill);
+    }
     var cnt = el("span", "count");
     cnt.appendChild(el("strong", null, String(fiveOf(t).length)));
     cnt.appendChild(document.createTextNode("/5 titulaires"));
@@ -1087,12 +1120,26 @@ function renderTeam(mount, side, sideLabel){
     return;
   }
 
-  var forme = blocForme(t, side);
-  if(forme) box.appendChild(forme);
-
   var rh = el("div", "rosterhead");
   rh.appendChild(el("span", null, t.joueurs.length + " joueurs"));
-  rh.appendChild(el("span", "sp", "5 = titulaire   ✕ = absent"));
+  var cl2 = (side.compId === "custom") ? null : ligneClassement(competition(side.compId), t.id);
+  if(cl2 && cl2.cinq && cl2.cinq.length){
+    var c5 = el("div", "cinq");
+    c5.title = "Cinq derniers résultats";
+    cl2.cinq.forEach(function(x){
+      var sp = el("span", x.gagne ? "g" : "p", x.gagne ? "V" : "D");
+      sp.title = x.texte || "";
+      c5.appendChild(sp);
+    });
+    rh.appendChild(c5);
+  }
+  var mm = (side.compId === "custom") ? {prochains:[]} : matchsEquipe(competition(side.compId), t.id);
+  if((cl2 && cl2.rang) || mm.prochains.length){
+    var bi = el("button", "infobtn", "Calendrier");
+    if(!cl2 || !cl2.cinq || !cl2.cinq.length) bi.style.marginLeft = "auto";
+    bi.addEventListener("click", function(){ ficheEquipe(t, side); });
+    rh.appendChild(bi);
+  }
   box.appendChild(rh);
 
   var ul = el("ul", "roster");
