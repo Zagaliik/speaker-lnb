@@ -1,0 +1,1550 @@
+<title>Speaker LNB</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Speaker LNB">
+<meta name="theme-color" content="#0E1116">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --ground:#F5F6F8; --surface:#FFFFFF; --surface-2:#EDEFF3; --line:#DCE0E8;
+  --ink:#141820; --ink-2:#4B5565; --muted:#78828F;
+  --accent:#B06E00; --accent-ink:#FFFFFF; --accent-soft:#FFF2DB;
+  --ok:#1C7C45; --danger:#B33325; --danger-soft:#FBE7E4;
+  --chip:#FFFFFF; --chip-line:#DCE0E8;
+  --radius:10px;
+  --display:"Barlow Condensed","Haettenschweiler","Arial Narrow",sans-serif;
+  --body:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --shadow:0 1px 2px rgba(20,24,32,.06),0 4px 14px rgba(20,24,32,.05);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1116; --surface:#171B22; --surface-2:#1F242D; --line:#2A313C;
+    --ink:#E8EAED; --ink-2:#AEB6C2; --muted:#7C8593;
+    --accent:#FFB020; --accent-ink:#0E1116; --accent-soft:#3A2C10;
+    --ok:#35C26B; --danger:#E1503C; --danger-soft:#38150F;
+    --chip:#F2F4F7; --chip-line:#2A313C;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1116; --surface:#171B22; --surface-2:#1F242D; --line:#2A313C;
+  --ink:#E8EAED; --ink-2:#AEB6C2; --muted:#7C8593;
+  --accent:#FFB020; --accent-ink:#0E1116; --accent-soft:#3A2C10;
+  --ok:#35C26B; --danger:#E1503C; --danger-soft:#38150F;
+  --chip:#F2F4F7; --chip-line:#2A313C;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
+  font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.app{max-width:1340px;margin:0 auto;padding:0 16px 96px}
+header.top{
+  position:sticky;top:0;z-index:30;background:var(--ground);
+  border-bottom:1px solid var(--line);margin:0 -16px;padding:10px 16px 0;
+}
+.brandline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-weight:700;font-size:23px;letter-spacing:.02em;text-transform:uppercase}
+.brand span{color:var(--accent)}
+.status{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+.dot.off{background:var(--muted)}
+
+nav.tabs{display:flex;gap:2px;margin-top:8px;overflow-x:auto;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{
+  padding:9px 15px;font-family:var(--display);font-size:16px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.05em;color:var(--muted);white-space:nowrap;
+  border-bottom:2px solid transparent;
+}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.panel[hidden]{display:none!important}
+.panel{padding-top:18px}
+
+.matchbar{
+  display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 13px;box-shadow:var(--shadow);
+}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.field select,.field input{
+  padding:8px 9px;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:7px;font-size:14px;min-width:0;max-width:100%;
+}
+.matchbar .spacer{margin-left:auto}
+
+.teams{display:grid;gap:16px;grid-template-columns:1fr 1fr;margin-top:16px;align-items:start}
+@media (max-width:980px){.teams{grid-template-columns:1fr}}
+
+.team{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;box-shadow:var(--shadow);border-top:3px solid var(--team,var(--line));
+}
+.team>header{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--line)}
+.side{
+  font-family:var(--display);font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.11em;color:var(--accent-ink);background:var(--accent);
+  padding:2px 7px;border-radius:4px;flex:none;
+}
+.logo{
+  width:38px;height:38px;flex:none;border-radius:8px;background:var(--chip);
+  border:1px solid var(--chip-line);padding:3px;object-fit:contain;
+}
+.logo.ph{display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:15px;color:#4B5565}
+.team h2{margin:0;font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:.01em;min-width:0}
+.team .count{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;flex:none}
+.team .count strong{color:var(--accent);font-size:15px}
+
+.picker{display:grid;gap:8px;grid-template-columns:1fr 1fr;padding:11px 13px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.picker select{padding:8px 9px;background:var(--surface);border:1px solid var(--line);border-radius:7px;font-size:13.5px;min-width:0}
+
+.rosterhead{
+  display:flex;align-items:center;gap:8px;padding:6px 13px;
+  background:var(--surface-2);border-bottom:1px solid var(--line);
+  font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+}
+.rosterhead .sp{margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0}
+
+ul.roster{list-style:none;margin:0;padding:0}
+ul.roster li{border-bottom:1px solid var(--line)}
+ul.roster li:last-child{border-bottom:none}
+.pl{display:flex;align-items:center;gap:9px;padding:7px 13px}
+.num{
+  font-family:var(--display);font-size:21px;font-weight:700;min-width:27px;flex:none;
+  text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums;
+}
+.num.edited{color:var(--accent)}
+.thumb{
+  width:34px;height:34px;flex:none;border-radius:8px;object-fit:cover;object-position:center;
+  background:var(--surface-2);border:1px solid var(--line);
+}
+.thumb.ph{display:grid;place-items:center;font-family:var(--display);font-size:13px;font-weight:600;color:var(--muted)}
+.who{min-width:0;flex:1}
+.nm{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.nm b{font-weight:600;font-size:14.5px}
+.nm .fn{color:var(--ink-2);font-weight:400}
+.tagnew{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:3px;padding:0 4px}
+.meta{font-size:11.5px;color:var(--muted);display:flex;gap:7px;flex-wrap:wrap;margin-top:1px}
+.meta .st{font-variant-numeric:tabular-nums}
+.phon{font-size:11.5px;color:var(--accent);font-style:italic}
+.marks{display:flex;gap:5px;flex:none;align-items:center}
+.mk{
+  width:31px;height:31px;border-radius:7px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--muted);font-family:var(--display);
+  font-size:14px;font-weight:700;display:grid;place-items:center;
+}
+.mk.five[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.mk.out[aria-pressed="true"]{background:var(--danger-soft);color:var(--danger);border-color:var(--danger)}
+.mk.del{font-size:12px}
+li.is-out .pl{opacity:.42}
+li.is-five{background:var(--accent-soft)}
+
+.addzone{padding:9px 13px;border-top:1px solid var(--line);display:flex;gap:7px;flex-wrap:wrap}
+.addform{display:none;grid-template-columns:70px 1fr 1fr;gap:7px;padding:11px 13px;background:var(--surface-2);border-top:1px solid var(--line)}
+.addform.open{display:grid}
+.addform input,.addform select{padding:7px 8px;background:var(--surface);border:1px solid var(--line);border-radius:7px;font-size:13.5px;min-width:0}
+.addform .full{grid-column:1/-1}
+.addform .acts{grid-column:1/-1;display:flex;gap:7px}
+
+.staff{padding:10px 13px;border-top:1px solid var(--line);background:var(--surface-2)}
+.staff h3{margin:0 0 6px;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.staff ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.staff li{font-size:13px;display:flex;gap:8px;align-items:center}
+.staff .role{color:var(--muted);font-size:11.5px;min-width:112px;flex:none}
+.staff .nmx{flex:1;min-width:0}
+
+.btn{padding:7px 13px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);font-size:13px;font-weight:500}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.ghost{background:none}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.sm{padding:5px 10px;font-size:12px}
+
+/* ---------- officiels de la rencontre ---------- */
+.offmatch{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:13px}
+@media (max-width:700px){.offmatch{grid-template-columns:1fr}}
+.offcol h3{margin:0 0 7px;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  padding:6px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);
+  font-size:12.5px;display:flex;gap:6px;align-items:baseline;
+}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip .r{opacity:.68;font-size:11px}
+.offcol .vide{font-size:12.5px;color:var(--muted)}
+
+/* ---------- fenêtres intégrées ---------- */
+.overlay{position:fixed;inset:0;background:rgba(8,10,14,.6);display:grid;place-items:center;z-index:80;padding:18px}
+.dialog{
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.35);
+  width:min(470px,100%);max-height:86vh;display:flex;flex-direction:column;overflow:hidden;
+}
+.dialog h3{margin:0;padding:14px 16px;border-bottom:1px solid var(--line);font-family:var(--display);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.dialog .body{padding:14px 16px;overflow:auto;display:flex;flex-direction:column;gap:9px}
+.dialog .msg{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.45}
+.dialog .details{margin:0;padding-left:18px;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+.dialog .din{width:100%;padding:9px 11px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;font-size:15px}
+.dialog .dlab{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.dialog .foot{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
+.thumbbtn{flex:none;padding:0;border:0;background:none;line-height:0;border-radius:8px}
+.dialog.photo{width:min(400px,100%)}
+.bigphoto{width:100%;height:auto;display:block;border-radius:10px;background:var(--surface-2)}
+.photonote{font-size:12px;color:var(--muted);text-align:center;min-height:1em}
+.picklist{display:flex;flex-direction:column;gap:2px;max-height:46vh;overflow:auto}
+.picklist button{width:100%;text-align:left;padding:9px 11px;border-radius:8px;border:1px solid transparent;display:flex;gap:9px;align-items:baseline}
+.picklist button:hover{background:var(--surface-2);border-color:var(--line)}
+.picklist .pn{font-size:14px;font-weight:500}
+.picklist .pp{font-size:12px;color:var(--accent);font-style:italic}
+.picklist .vide{font-size:13px;color:var(--muted);padding:8px 2px}
+
+/* ---------- affectation des rôles ---------- */
+.slotbox{display:block}
+.slots{display:flex;flex-direction:column;gap:7px;margin-bottom:9px}
+.slot{display:flex;gap:7px;align-items:center}
+.slot .rolein{
+  width:34%;max-width:190px;flex:none;padding:7px 9px;background:var(--surface);
+  border:1px solid var(--line);border-radius:7px;font-size:12.5px;font-weight:500;
+}
+.slot .person{
+  flex:1;min-width:0;text-align:left;padding:7px 11px;border:1px solid var(--line);
+  border-radius:7px;background:var(--surface-2);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.slot .person.vide{color:var(--muted);font-style:italic}
+.slot .sx{width:28px;height:28px;flex:none;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);color:var(--muted);font-size:12px;display:grid;place-items:center}
+.vidannuaire{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:9px 11px;margin-bottom:9px;
+  background:var(--accent-soft);border:1px solid var(--accent);border-radius:8px;font-size:12.5px}
+.search{width:100%;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:7px;font-size:13.5px}
+
+/* ---------- conducteur ---------- */
+.cond{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.cond-bar{display:flex;gap:8px;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.runorder{font-size:12px;color:var(--muted);margin-left:auto}
+
+.banner{
+  display:flex;align-items:center;gap:13px;padding:14px 18px;
+  background:var(--team,var(--surface-2));border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+}
+.banner .logo{width:48px;height:48px}
+.banner h2{margin:0;font-family:var(--display);font-size:29px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+.banner .lab{font-family:var(--display);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#fff;opacity:.92;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+.banner.plain h2,.banner.plain .lab{color:var(--ink);text-shadow:none}
+
+.blk{padding:13px 18px;border-bottom:1px solid var(--line)}
+.blk:last-child{border-bottom:none}
+.blk-h{display:flex;align-items:baseline;gap:9px;margin-bottom:8px}
+.blk-h .step{
+  font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:.11em;
+  color:var(--accent-ink);background:var(--accent);padding:2px 7px;border-radius:4px;text-transform:uppercase;flex:none;
+}
+.blk-h h3{margin:0;font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:.01em;text-transform:uppercase}
+.blk-h .sub{font-size:12px;color:var(--muted);margin-left:auto}
+
+.callout{display:flex;flex-direction:column;gap:2px}
+.call{display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.call:last-child{border-bottom:none}
+.call .n{
+  font-family:var(--display);font-size:29px;font-weight:700;min-width:40px;flex:none;text-align:right;
+  color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.05;
+}
+.call .thumb{width:44px;height:44px;border-radius:9px}
+.call .body{min-width:0;flex:1}
+.call .big{font-family:var(--display);font-size:27px;font-weight:600;line-height:1.12;letter-spacing:.01em}
+.call .big .last{font-weight:700;text-transform:uppercase}
+.call .line2{font-size:12.5px;color:var(--muted);display:flex;gap:9px;flex-wrap:wrap;margin-top:1px}
+.call .say{color:var(--accent);font-style:italic;font-size:13px}
+.empty{padding:24px 18px;text-align:center;color:var(--muted);font-size:14px}
+
+/* ---------- officiels ---------- */
+.off-grid{display:grid;gap:16px;grid-template-columns:1fr 1fr;align-items:start}
+@media (max-width:980px){.off-grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card>header{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px}
+.card>header h2{margin:0;font-family:var(--display);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.card>header .n{margin-left:auto;font-size:12px;color:var(--muted)}
+.addrow{display:grid;gap:7px;grid-template-columns:1fr 1fr;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.addrow input,.addrow select{padding:7px 9px;background:var(--surface);border:1px solid var(--line);border-radius:7px;font-size:13.5px;min-width:0}
+.addrow .full{grid-column:1/-1}
+ul.people{list-style:none;margin:0;padding:0}
+ul.people li{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line)}
+ul.people li:last-child{border-bottom:none}
+ul.people .who b{font-weight:600;font-size:14px}
+ul.people .who .r{font-size:11.5px;color:var(--muted)}
+.chk{width:28px;height:28px;flex:none;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);display:grid;place-items:center;font-size:13px;color:var(--muted)}
+.chk[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff}
+
+.rows{display:flex;flex-direction:column;gap:1px;background:var(--line)}
+.row{display:flex;gap:12px;align-items:center;padding:12px 14px;background:var(--surface);flex-wrap:wrap}
+.row .k{font-size:13px;font-weight:500;min-width:170px}
+.row .v{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.row .a{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}
+.note{font-size:12.5px;color:var(--muted);padding:12px 14px;background:var(--surface);line-height:1.5}
+
+.toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+  background:var(--ink);color:var(--ground);padding:10px 18px;border-radius:8px;
+  font-size:13.5px;font-weight:500;z-index:60;box-shadow:var(--shadow);max-width:90vw;
+}
+.toast[hidden]{display:none}
+
+@media print{
+  header.top,nav.tabs,.cond-bar{display:none}
+  body{background:#fff;color:#000}
+  .cond{border:none;box-shadow:none}
+  .blk{break-inside:avoid}
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brandline">
+      <div class="brand">Speaker <span>LNB</span></div>
+      <div class="status">
+        <span class="dot" id="netdot"></span><span id="netlabel">Hors ligne</span>
+        <span aria-hidden="true">·</span><span id="datalabel">—</span>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="compo" aria-selected="true">Composition</button>
+      <button role="tab" data-tab="cond" aria-selected="false">Conducteur</button>
+      <button role="tab" data-tab="off" aria-selected="false">Officiels</button>
+      <button role="tab" data-tab="data" aria-selected="false">Données</button>
+    </nav>
+  </header>
+
+  <section class="panel" id="p-compo" role="tabpanel">
+    <div class="matchbar">
+      <div class="field">
+        <label for="f-date">Date de la rencontre</label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="field spacer">
+        <label>&nbsp;</label>
+        <button class="btn" id="b-newteam">Créer une équipe</button>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn danger" id="b-reset">Nouvelle rencontre</button>
+      </div>
+    </div>
+    <div class="teams">
+      <div id="t-home"></div>
+      <div id="t-away"></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <header><h2>Officiels de la rencontre</h2><span class="n" id="n-match-off"></span></header>
+      <div class="offmatch">
+        <div class="offcol"><h3>Arbitres</h3><div class="slotbox" id="m-arb"></div></div>
+        <div class="offcol"><h3>Table de marque</h3><div class="slotbox" id="m-tab"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-cond" role="tabpanel" hidden>
+    <div class="cond">
+      <div class="cond-bar">
+        <button class="btn ghost" id="c-stats">Masquer les stats</button>
+        <button class="btn ghost" id="c-photos">Masquer les photos</button>
+        <button class="btn ghost" id="c-print">Imprimer</button>
+        <button class="btn ghost" id="c-theme">Thème</button>
+        <span class="runorder">Visiteurs → Arbitres → Table de marque → Recevants</span>
+      </div>
+      <div class="script" id="script"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-off" role="tabpanel" hidden>
+    <div class="off-grid">
+      <div class="card">
+        <header><h2>Arbitres</h2><span class="n" id="n-arb"></span></header>
+        <div class="addrow">
+          <input class="full search" id="a-search" placeholder="Rechercher un arbitre…" autocomplete="off">
+          <button class="btn primary full" id="a-add">＋ Ajouter un arbitre</button>
+        </div>
+        <ul class="people" id="l-arb"></ul>
+      </div>
+      <div class="card">
+        <header><h2>Table de marque</h2><span class="n" id="n-tab"></span></header>
+        <div class="addrow">
+          <input class="full search" id="t-search" placeholder="Rechercher un officiel…" autocomplete="off">
+          <button class="btn primary full" id="t-add">＋ Ajouter un officiel</button>
+        </div>
+        <ul class="people" id="l-tab"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-data" role="tabpanel" hidden>
+    <div class="card">
+      <header><h2>Données LNB</h2></header>
+      <div class="rows">
+        <div class="row"><span class="k">Saison</span><span class="v" id="d-saison">—</span></div>
+        <div class="row"><span class="k">Dernière mise à jour</span><span class="v" id="d-maj">—</span>
+          <span class="a"><button class="btn" id="d-sync">Actualiser</button></span></div>
+        <div class="row"><span class="k">Contenu</span><span class="v" id="d-count">—</span></div>
+        <div class="row"><span class="k">Ma préparation</span><span class="v" id="d-prep">—</span>
+          <span class="a">
+            <button class="btn" id="d-export">Exporter</button>
+            <button class="btn" id="d-import">Importer</button>
+          </span></div>
+        <div class="note" id="d-note"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<script id="lnb-seed" type="application/json">__LNB_DATA__</script>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ persistance ============ */
+var LS = "speaker-lnb:v1";
+var DBN = "speaker-lnb", STORE = "kv";
+
+function idb(){
+  return new Promise(function(res, rej){
+    var r = indexedDB.open(DBN, 1);
+    r.onupgradeneeded = function(){ r.result.createObjectStore(STORE); };
+    r.onsuccess = function(){ res(r.result); };
+    r.onerror = function(){ rej(r.error); };
+  });
+}
+function idbGet(k){
+  return idb().then(function(db){
+    return new Promise(function(res, rej){
+      var t = db.transaction(STORE, "readonly").objectStore(STORE).get(k);
+      t.onsuccess = function(){ res(t.result); };
+      t.onerror = function(){ rej(t.error); };
+    });
+  }).catch(function(){ return null; });
+}
+function idbSet(k, v){
+  return idb().then(function(db){
+    return new Promise(function(res, rej){
+      var t = db.transaction(STORE, "readwrite").objectStore(STORE).put(v, k);
+      t.onsuccess = function(){ res(true); };
+      t.onerror = function(){ rej(t.error); };
+    });
+  }).catch(function(){ return false; });
+}
+
+var ROLES_ARB = ["Arbitre 1", "Arbitre 2", "Arbitre 3"];
+var ROLES_TAB = ["Marqueur", "Chronométreur", "Opérateur des 24 secondes", "Aide-marqueur"];
+
+var S = {
+  home:{compId:null, teamId:null},
+  away:{compId:null, teamId:null},
+  date:"",
+  five:{}, out:{}, phon:{}, num:{},
+  extra:{}, extraStaff:{},
+  customTeams:[],
+  arbitres:[], table:[],            // annuaires : identite seulement
+  roles:{arb:[], tab:[]},           // affectations propres a la rencontre
+  showStats:true, showPhotos:true, theme:null
+};
+function save(){ try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){} }
+
+function load(){
+  try{
+    var raw = localStorage.getItem(LS);
+    if(raw) reprendre(JSON.parse(raw));
+  }catch(e){}
+  // Hors du try : sans preparation enregistree, il faut quand meme des roles
+  // par defaut, sinon l'ecran de designation reste vide et inutilisable.
+  if(!S.roles.arb.length) S.roles.arb = ROLES_ARB.map(nouveauRole);
+  if(!S.roles.tab.length) S.roles.tab = ROLES_TAB.map(nouveauRole);
+}
+
+function reprendre(o){
+    if(o.compId && !o.home){
+      o.home = {compId:o.compId, teamId:o.homeId || null};
+      o.away = {compId:o.compId, teamId:o.awayId || null};
+    }
+    for(var k in o){ if(o[k] !== undefined && S[k] !== undefined) S[k] = o[k]; }
+    if(!S.home || typeof S.home !== "object") S.home = {compId:null, teamId:null};
+    if(!S.away || typeof S.away !== "object") S.away = {compId:null, teamId:null};
+    if(!S.roles || !S.roles.arb) S.roles = {arb:[], tab:[]};
+
+    // Le role appartenait a la fiche de la personne ; il appartient desormais
+    // a la rencontre. On transfere ce qui existait.
+    migrer(o.arbitres, o.selArb, S.arbitres, S.roles.arb);
+    migrer(o.table, o.selTab, S.table, S.roles.tab);
+}
+function migrer(anciens, sel, annuaire, slots){
+  if(!Array.isArray(anciens)) return;
+  // "anciens" et "annuaire" sont souvent LE MEME tableau : la reprise d'etat vient
+  // d'affecter la reference. Vider l'annuaire viderait donc aussi la source.
+  var copie = anciens.slice();
+  if(!copie.some(function(p){ return p && p.role; })) return;
+  annuaire.length = 0;
+  copie.forEach(function(p){
+    annuaire.push({id:p.id, prenom:p.prenom, nom:p.nom, phon:p.phon || ""});
+    if(sel && sel[p.id] && p.role) slots.push({id:uid("r"), role:p.role, personId:p.id});
+  });
+}
+function nouveauRole(nom){ return {id:uid("r"), role:nom, personId:null}; }
+
+/* ============ données ============ */
+var DATA = null;
+
+function seedData(){
+  var e = document.getElementById("lnb-seed");
+  if(!e) return null;
+  var t = e.textContent.trim();
+  if(!t || t.indexOf("__LNB") === 0) return null;
+  try{ return JSON.parse(t); }catch(err){ return null; }
+}
+function loadData(){
+  var embedded = seedData();
+  if(embedded){ idbSet("data", embedded); return Promise.resolve(embedded); }
+  return idbGet("data").then(function(c){
+    if(c){ refresh(true); return c; }
+    return fetchData();
+  });
+}
+function fetchData(){
+  return fetch("lnb-data.json", {cache:"no-cache"}).then(function(r){
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  }).then(function(d){ return idbSet("data", d).then(function(){ return d; }); });
+}
+function refresh(silent){
+  if(!navigator.onLine){ if(!silent) toast("Pas de réseau — les données locales restent utilisables."); return; }
+  fetchData().then(function(d){
+    DATA = d; renderAll();
+    if(!silent) toast("Données à jour.");
+  }).catch(function(){ if(!silent) toast("Actualisation impossible. Les données locales sont conservées."); });
+}
+
+/* ============ utilitaires ============ */
+function $(id){ return document.getElementById(id); }
+function el(tag, cls, txt){
+  var n = document.createElement(tag);
+  if(cls) n.className = cls;
+  if(txt != null) n.textContent = txt;
+  return n;
+}
+var toastTimer;
+function toast(msg){
+  var t = $("toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.hidden = true; }, 3200);
+}
+function flag(code){
+  if(!code || code.length !== 2) return "";
+  return String.fromCodePoint.apply(null, code.toUpperCase().split("").map(function(c){
+    return 0x1F1E6 + c.charCodeAt(0) - 65;
+  }));
+}
+function uid(p){ return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function sansAccent(s){
+  return (s || "").normalize ? (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+                             : (s || "").toLowerCase();
+}
+
+/* ============ fenêtres intégrées ============ */
+/* prompt() et confirm() sont bloques dans certains visualiseurs et penibles sur
+   tablette : on gere nos propres fenetres. */
+function dialogue(construire){
+  return new Promise(function(resolve){
+    var ov = el("div", "overlay");
+    var dg = el("div", "dialog");
+    var fini = false;
+    function fermer(val){
+      if(fini) return;
+      fini = true;
+      document.removeEventListener("keydown", onKey);
+      ov.remove();
+      resolve(val);
+    }
+    function onKey(e){ if(e.key === "Escape") fermer(null); }
+    document.addEventListener("keydown", onKey);
+    ov.addEventListener("mousedown", function(e){ if(e.target === ov) fermer(null); });
+    construire(dg, fermer);
+    ov.appendChild(dg);
+    document.body.appendChild(ov);
+  });
+}
+
+function demander(o){
+  return dialogue(function(dg, fermer){
+    dg.appendChild(el("h3", null, o.titre));
+    var body = el("div", "body");
+    if(o.message) body.appendChild(el("p", "msg", o.message));
+    var inp = document.createElement("input");
+    inp.type = "text"; inp.className = "din";
+    inp.value = o.valeur || ""; inp.placeholder = o.placeholder || "";
+    if(o.numerique) inp.inputMode = "numeric";
+    body.appendChild(inp);
+    dg.appendChild(body);
+    var foot = el("div", "foot");
+    var annul = el("button", "btn ghost", "Annuler");
+    var ok = el("button", "btn primary", o.valider || "Valider");
+    annul.addEventListener("click", function(){ fermer(null); });
+    ok.addEventListener("click", function(){ fermer(inp.value); });
+    inp.addEventListener("keydown", function(e){ if(e.key === "Enter") fermer(inp.value); });
+    foot.appendChild(annul); foot.appendChild(ok);
+    dg.appendChild(foot);
+    setTimeout(function(){ inp.focus(); inp.select(); }, 30);
+  });
+}
+
+function confirmer(o){
+  return dialogue(function(dg, fermer){
+    dg.appendChild(el("h3", null, o.titre));
+    var body = el("div", "body");
+    body.appendChild(el("p", "msg", o.message || ""));
+    if(o.details){
+      var ul = el("ul", "details");
+      o.details.forEach(function(d){ ul.appendChild(el("li", null, d)); });
+      body.appendChild(ul);
+    }
+    dg.appendChild(body);
+    var foot = el("div", "foot");
+    var annul = el("button", "btn ghost", "Annuler");
+    var ok = el("button", "btn " + (o.danger ? "danger" : "primary"), o.valider || "Confirmer");
+    annul.addEventListener("click", function(){ fermer(false); });
+    ok.addEventListener("click", function(){ fermer(true); });
+    foot.appendChild(annul); foot.appendChild(ok);
+    dg.appendChild(foot);
+  });
+}
+
+/** Choix d'une personne dans l'annuaire, avec recherche. */
+function choisirPersonne(annuaire, titre){
+  return dialogue(function(dg, fermer){
+    dg.appendChild(el("h3", null, titre));
+    var body = el("div", "body");
+    var rech = document.createElement("input");
+    rech.type = "text"; rech.className = "din"; rech.placeholder = "Rechercher un nom…";
+    body.appendChild(rech);
+    var liste = el("div", "picklist");
+    body.appendChild(liste);
+    dg.appendChild(body);
+
+    function dessiner(){
+      liste.innerHTML = "";
+      var q = sansAccent(rech.value.trim());
+      var res = annuaire.filter(function(p){
+        return !q || sansAccent(p.prenom + " " + p.nom).indexOf(q) >= 0;
+      });
+      if(!annuaire.length){
+        liste.appendChild(el("div", "vide", "Annuaire vide. Crée la première personne ci-dessous."));
+      } else if(!res.length){
+        liste.appendChild(el("div", "vide", "Aucun nom ne correspond."));
+      }
+      res.forEach(function(p){
+        var b = el("button", null);
+        b.appendChild(el("span", "pn", (p.prenom + " " + (p.nom || "").toUpperCase()).trim()));
+        if(p.phon) b.appendChild(el("span", "pp", "« " + p.phon + " »"));
+        b.addEventListener("click", function(){ fermer({personId:p.id}); });
+        liste.appendChild(b);
+      });
+    }
+    rech.addEventListener("input", dessiner);
+    dessiner();
+
+    var foot = el("div", "foot");
+    var creer = el("button", "btn ghost", "＋ Nouvelle personne");
+    creer.addEventListener("click", function(){ fermer({creer:rech.value.trim()}); });
+    var vider = el("button", "btn ghost", "Retirer");
+    vider.addEventListener("click", function(){ fermer({personId:null}); });
+    var annul = el("button", "btn ghost", "Annuler");
+    annul.addEventListener("click", function(){ fermer(null); });
+    foot.appendChild(creer); foot.appendChild(vider); foot.appendChild(annul);
+    dg.appendChild(foot);
+    setTimeout(function(){ rech.focus(); }, 30);
+  });
+}
+
+/** Saisie d'une personne : prenom, nom, prononciation. */
+function saisirPersonne(valeurs, titre){
+  return dialogue(function(dg, fermer){
+    dg.appendChild(el("h3", null, titre));
+    var body = el("div", "body");
+    var champs = {};
+    [["prenom", "Prénom"], ["nom", "Nom"], ["phon", "Prononciation (facultatif)"]].forEach(function(c){
+      var lab = el("label", "dlab", c[1]);
+      var i = document.createElement("input");
+      i.type = "text"; i.className = "din"; i.value = (valeurs && valeurs[c[0]]) || "";
+      lab.appendChild(i); body.appendChild(lab);
+      champs[c[0]] = i;
+    });
+    dg.appendChild(body);
+    var foot = el("div", "foot");
+    var annul = el("button", "btn ghost", "Annuler");
+    var ok = el("button", "btn primary", "Enregistrer");
+    annul.addEventListener("click", function(){ fermer(null); });
+    ok.addEventListener("click", function(){
+      if(!champs.prenom.value.trim() && !champs.nom.value.trim()){ toast("Indique au moins un nom."); return; }
+      fermer({prenom:champs.prenom.value.trim(), nom:champs.nom.value.trim(), phon:champs.phon.value.trim()});
+    });
+    foot.appendChild(annul); foot.appendChild(ok);
+    dg.appendChild(foot);
+    setTimeout(function(){ champs.prenom.focus(); }, 30);
+  });
+}
+
+/* ============ équipes ============ */
+function competition(id){
+  if(!DATA || id == null) return null;
+  return DATA.competitions.filter(function(c){ return c.id === id; })[0] || null;
+}
+function customTeam(id){ return S.customTeams.filter(function(t){ return t.id === id; })[0] || null; }
+function teamKey(side){
+  if(!side.teamId) return null;
+  return String(side.teamId).indexOf("c:") === 0 ? side.teamId : side.compId + ":" + side.teamId;
+}
+function resolveTeam(side){
+  if(!side || side.teamId == null) return null;
+  var base;
+  if(String(side.teamId).indexOf("c:") === 0){
+    var ct = customTeam(side.teamId);
+    if(!ct) return null;
+    base = {id:ct.id, nom:ct.nom, couleur:ct.couleur, logo:null, joueurs:[], staff:[], custom:true};
+  } else {
+    var c = competition(side.compId);
+    if(!c) return null;
+    var t = c.equipes.filter(function(e){ return e.id === side.teamId; })[0];
+    if(!t) return null;
+    base = {id:t.id, nom:t.nom, couleur:t.couleur, logo:t.logo,
+            joueurs:t.joueurs.slice(), staff:t.staff.slice()};
+  }
+  var k = teamKey(side);
+  base.key = k;
+  base.joueurs = base.joueurs.concat(S.extra[k] || []);
+  base.staff = base.staff.concat(S.extraStaff[k] || []);
+  return base;
+}
+function numOf(j){
+  var o = S.num[j.id];
+  return (o != null && o !== "") ? String(o) : (j.numero || "");
+}
+function byNumber(list){
+  return list.slice().sort(function(a, b){
+    var na = numOf(a), nb = numOf(b);
+    var ia = /^\d+$/.test(na) ? parseInt(na, 10) : 9999;
+    var ib = /^\d+$/.test(nb) ? parseInt(nb, 10) : 9999;
+    if(ia !== ib) return ia - ib;
+    return (a.nom || "").localeCompare(b.nom || "", "fr");
+  });
+}
+function statsOf(j){
+  var has = j.stats && Object.keys(j.stats).some(function(k){ return j.stats[k]; });
+  if(has) return {s:j.stats, hist:false};
+  return j.stats_precedentes ? {s:j.stats_precedentes, hist:true} : null;
+}
+function statLine(j){
+  var r = statsOf(j); if(!r) return "";
+  var s = r.s, p = [];
+  if(s.points != null) p.push(s.points + " pts");
+  if(s.rebonds != null) p.push(s.rebonds + " reb");
+  if(s.passes != null) p.push(s.passes + " pd");
+  if(s.evaluation != null) p.push(s.evaluation + " éval");
+  if(!p.length) return "";
+  return p.join(" · ") + (r.hist ? " (saison passée)" : "");
+}
+function fiveOf(t){ return t ? byNumber(t.joueurs.filter(function(j){ return S.five[j.id]; })) : []; }
+function subsOf(t){ return t ? byNumber(t.joueurs.filter(function(j){ return !S.five[j.id] && !S.out[j.id]; })) : []; }
+function initials(p, n){ return ((p || "").charAt(0) + (n || "").charAt(0)).toUpperCase(); }
+function avatar(person, cls){
+  if(S.showPhotos && person.photo){
+    var img = document.createElement("img");
+    img.className = "thumb" + (cls ? " " + cls : "");
+    img.src = person.photo; img.alt = ""; img.loading = "lazy";
+    var b = el("button", "thumbbtn");
+    b.title = "Agrandir la photo";
+    b.appendChild(img);
+    b.addEventListener("click", function(){ grandePhoto(person); });
+    return b;
+  }
+  return el("div", "thumb ph" + (cls ? " " + cls : ""), initials(person.prenom, person.nom));
+}
+
+/** Agrandissement : photo pleine definition si le reseau repond, vignette sinon. */
+function grandePhoto(p){
+  dialogue(function(dg, fermer){
+    dg.classList.add("photo");
+    dg.appendChild(el("h3", null, ((p.prenom || "") + " " + (p.nom || "").toUpperCase()).trim()));
+    var body = el("div", "body");
+    var note = el("div", "photonote", "");
+    var img = document.createElement("img");
+    img.className = "bigphoto"; img.alt = "";
+    var replie = false;
+    img.addEventListener("error", function(){
+      // Hors ligne, ou si la photo distante est bloquee : on garde la vignette embarquee.
+      if(!replie && p.photo){
+        replie = true;
+        note.textContent = "Photo hors ligne — définition réduite.";
+        img.src = p.photo;
+      }
+    });
+    img.src = p.photo_url || p.photo;
+    body.appendChild(img);
+
+    var infos = [];
+    if(p.numero) infos.push("N° " + numOf(p));
+    if(p.poste) infos.push(p.poste);
+    if(p.nationalite) infos.push((flag(p.code_pays) + " " + p.nationalite).trim());
+    if(p.taille) infos.push(p.taille + " cm");
+    if(p.age) infos.push(p.age + " ans");
+    if(p.role) infos.push(p.role);
+    if(infos.length) body.appendChild(el("p", "msg", infos.join("  ·  ")));
+    if(S.phon[p.id]) body.appendChild(el("p", "msg", "« " + S.phon[p.id] + " »"));
+    body.appendChild(note);
+    dg.appendChild(body);
+
+    var foot = el("div", "foot");
+    var f = el("button", "btn primary", "Fermer");
+    f.addEventListener("click", function(){ fermer(null); });
+    foot.appendChild(f);
+    dg.appendChild(foot);
+  });
+}
+function teamLogo(t, cls){
+  if(t && t.logo){
+    var img = document.createElement("img");
+    img.className = "logo" + (cls ? " " + cls : "");
+    img.src = t.logo; img.alt = "";
+    return img;
+  }
+  return el("div", "logo ph" + (cls ? " " + cls : ""), t ? (t.nom || "?").slice(0, 3).toUpperCase() : "?");
+}
+
+/* ============ onglets ============ */
+var panels = {compo:"p-compo", cond:"p-cond", off:"p-off", data:"p-data"};
+document.querySelectorAll("nav.tabs button").forEach(function(b){
+  b.addEventListener("click", function(){
+    document.querySelectorAll("nav.tabs button").forEach(function(x){
+      x.setAttribute("aria-selected", x === b ? "true" : "false");
+    });
+    for(var k in panels) $(panels[k]).hidden = (k !== b.dataset.tab);
+    if(b.dataset.tab === "cond") renderScript();
+  });
+});
+function gotoTab(name){
+  document.querySelectorAll("nav.tabs button").forEach(function(b){
+    if(b.dataset.tab === name) b.click();
+  });
+}
+
+/* ============ composition ============ */
+function renderAll(){ renderCompo(); renderScript(); renderOff(); renderData(); }
+function renderCompo(){
+  renderTeam($("t-home"), S.home, "Recevants");
+  renderTeam($("t-away"), S.away, "Visiteurs");
+  renderSlots();
+}
+
+function renderTeam(mount, side, sideLabel){
+  mount.innerHTML = "";
+  var t = resolveTeam(side);
+  var box = el("div", "team");
+  if(t && t.couleur) box.style.setProperty("--team", t.couleur);
+
+  var h = el("header");
+  h.appendChild(el("span", "side", sideLabel));
+  h.appendChild(teamLogo(t));
+  h.appendChild(el("h2", null, t ? t.nom : "Aucune équipe"));
+  if(t){
+    var cnt = el("span", "count");
+    cnt.appendChild(el("strong", null, String(fiveOf(t).length)));
+    cnt.appendChild(document.createTextNode("/5 titulaires"));
+    h.appendChild(cnt);
+  }
+  box.appendChild(h);
+
+  var pick = el("div", "picker");
+  var selC = document.createElement("select");
+  selC.setAttribute("aria-label", "Compétition " + sideLabel);
+  DATA.competitions.forEach(function(c){
+    var o = el("option", null, c.nom); o.value = String(c.id); selC.appendChild(o);
+  });
+  var oc = el("option", null, "Mes équipes"); oc.value = "custom"; selC.appendChild(oc);
+  selC.value = side.compId == null ? String(DATA.competitions[0].id) : String(side.compId);
+  if(side.compId == null) side.compId = parseInt(selC.value, 10);
+
+  var selT = document.createElement("select");
+  selT.setAttribute("aria-label", "Équipe " + sideLabel);
+  function fillT(){
+    selT.innerHTML = "";
+    var blank = el("option", null, "— choisir une équipe —"); blank.value = ""; selT.appendChild(blank);
+    if(selC.value === "custom"){
+      S.customTeams.forEach(function(ct){
+        var o = el("option", null, ct.nom); o.value = ct.id; selT.appendChild(o);
+      });
+      var neu = el("option", null, "＋ Créer une équipe…"); neu.value = "__new"; selT.appendChild(neu);
+    } else {
+      var c = competition(parseInt(selC.value, 10));
+      if(c) c.equipes.forEach(function(e){
+        var o = el("option", null, e.nom); o.value = String(e.id); selT.appendChild(o);
+      });
+    }
+    selT.value = side.teamId == null ? "" : String(side.teamId);
+    if(selT.value === "") side.teamId = null;
+  }
+  fillT();
+
+  selC.addEventListener("change", function(){
+    side.compId = selC.value === "custom" ? "custom" : parseInt(selC.value, 10);
+    side.teamId = null;
+    save(); renderCompo(); renderScript();
+  });
+  selT.addEventListener("change", function(){
+    if(selT.value === "__new"){ createTeam(side); return; }
+    side.teamId = selT.value === "" ? null
+                : (selC.value === "custom" ? selT.value : parseInt(selT.value, 10));
+    save(); renderCompo(); renderScript();
+  });
+  pick.appendChild(selC); pick.appendChild(selT);
+  box.appendChild(pick);
+
+  if(!t){
+    box.appendChild(el("div", "empty", "Choisis une compétition puis une équipe."));
+    mount.appendChild(box);
+    return;
+  }
+
+  var rh = el("div", "rosterhead");
+  rh.appendChild(el("span", null, t.joueurs.length + " joueurs"));
+  rh.appendChild(el("span", "sp", "5 = titulaire   ✕ = absent"));
+  box.appendChild(rh);
+
+  var ul = el("ul", "roster");
+  byNumber(t.joueurs).forEach(function(j){ ul.appendChild(playerRow(j, t)); });
+  box.appendChild(ul);
+
+  var az = el("div", "addzone");
+  var bj = el("button", "btn sm", "＋ Ajouter un joueur");
+  var bs = el("button", "btn sm ghost", "＋ Ajouter un membre du staff");
+  az.appendChild(bj); az.appendChild(bs);
+  if(t.custom){
+    var bd = el("button", "btn sm ghost danger", "Supprimer cette équipe");
+    bd.addEventListener("click", function(){
+      confirmer({titre:"Supprimer l'équipe", danger:true, valider:"Supprimer",
+        message:"L'équipe « " + t.nom + " » et son effectif seront supprimés."}).then(function(ok){
+        if(!ok) return;
+        S.customTeams = S.customTeams.filter(function(x){ return x.id !== t.id; });
+        delete S.extra[t.key]; delete S.extraStaff[t.key];
+        side.teamId = null; save(); renderCompo(); renderScript();
+      });
+    });
+    az.appendChild(bd);
+  }
+  box.appendChild(az);
+
+  var form = buildAddForm(t);
+  box.appendChild(form.joueur); box.appendChild(form.staff);
+  bj.addEventListener("click", function(){
+    form.staff.classList.remove("open"); form.joueur.classList.toggle("open");
+  });
+  bs.addEventListener("click", function(){
+    form.joueur.classList.remove("open"); form.staff.classList.toggle("open");
+  });
+
+  if(t.staff && t.staff.length){
+    var st = el("div", "staff");
+    st.appendChild(el("h3", null, "Staff technique"));
+    var sul = el("ul");
+    t.staff.forEach(function(m){
+      var li = el("li");
+      li.appendChild(el("span", "role", m.role || ""));
+      li.appendChild(el("span", "nmx", m.prenom + " " + (m.nom || "").toUpperCase()));
+      if(m.ajoute){
+        var x = el("button", "btn sm ghost danger", "✕");
+        x.addEventListener("click", function(){
+          S.extraStaff[t.key] = (S.extraStaff[t.key] || []).filter(function(v){ return v.id !== m.id; });
+          save(); renderCompo(); renderScript();
+        });
+        li.appendChild(x);
+      }
+      sul.appendChild(li);
+    });
+    st.appendChild(sul);
+    box.appendChild(st);
+  }
+  mount.appendChild(box);
+}
+
+function playerRow(j, t){
+  var li = el("li");
+  if(S.five[j.id]) li.className = "is-five";
+  else if(S.out[j.id]) li.className = "is-out";
+
+  var row = el("div", "pl");
+
+  var bn = el("button", "num" + (S.num[j.id] != null ? " edited" : ""), numOf(j) || "–");
+  bn.title = "Modifier le numéro pour cette rencontre";
+  bn.addEventListener("click", function(){
+    demander({
+      titre:"Numéro de maillot",
+      message:j.prenom + " " + j.nom + " — laisser vide pour revenir au numéro officiel ("
+              + (j.numero || "aucun") + ").",
+      valeur:numOf(j), numerique:true, valider:"Appliquer"
+    }).then(function(v){
+      if(v === null) return;
+      v = v.trim();
+      if(v === "" || v === (j.numero || "")) delete S.num[j.id]; else S.num[j.id] = v;
+      save(); renderCompo(); renderScript();
+    });
+  });
+  row.appendChild(bn);
+  row.appendChild(avatar(j));
+
+  var who = el("div", "who");
+  var nm = el("div", "nm");
+  nm.appendChild(el("span", "fn", j.prenom));
+  nm.appendChild(el("b", null, (j.nom || "").toUpperCase()));
+  if(j.ajoute) nm.appendChild(el("span", "tagnew", "ajouté"));
+  who.appendChild(nm);
+
+  var meta = el("div", "meta");
+  var nat = (flag(j.code_pays) + " " + (j.nationalite || "")).trim();
+  if(nat) meta.appendChild(el("span", null, nat));
+  if(j.poste_court) meta.appendChild(el("span", null, j.poste_court));
+  if(j.taille) meta.appendChild(el("span", null, j.taille + " cm"));
+  if(j.age) meta.appendChild(el("span", null, j.age + " ans"));
+  var sl = statLine(j);
+  if(sl) meta.appendChild(el("span", "st", sl));
+  who.appendChild(meta);
+  if(S.phon[j.id]) who.appendChild(el("div", "phon", "« " + S.phon[j.id] + " »"));
+
+  who.style.cursor = "pointer";
+  who.title = "Noter la prononciation";
+  who.addEventListener("click", function(){
+    demander({titre:"Prononciation", message:j.prenom + " " + j.nom,
+              valeur:S.phon[j.id] || "", placeholder:"ex. na-DIR i-FI"}).then(function(v){
+      if(v === null) return;
+      if(v.trim()) S.phon[j.id] = v.trim(); else delete S.phon[j.id];
+      save(); renderCompo(); renderScript();
+    });
+  });
+  row.appendChild(who);
+
+  var marks = el("div", "marks");
+  var b5 = el("button", "mk five", "5");
+  b5.setAttribute("aria-pressed", S.five[j.id] ? "true" : "false");
+  b5.title = "Titulaire";
+  b5.addEventListener("click", function(){
+    if(S.five[j.id]) delete S.five[j.id];
+    else {
+      if(fiveOf(t).length >= 5){ toast("Le 5 majeur est complet. Retire d'abord un joueur."); return; }
+      S.five[j.id] = true; delete S.out[j.id];
+    }
+    save(); renderCompo(); renderScript();
+  });
+  marks.appendChild(b5);
+
+  var bo = el("button", "mk out", "✕");
+  bo.setAttribute("aria-pressed", S.out[j.id] ? "true" : "false");
+  bo.title = "Absent de la feuille";
+  bo.addEventListener("click", function(){
+    if(S.out[j.id]) delete S.out[j.id];
+    else { S.out[j.id] = true; delete S.five[j.id]; }
+    save(); renderCompo(); renderScript();
+  });
+  marks.appendChild(bo);
+
+  if(j.ajoute){
+    var bd = el("button", "mk del", "🗑");
+    bd.title = "Retirer ce joueur ajouté";
+    bd.addEventListener("click", function(){
+      S.extra[t.key] = (S.extra[t.key] || []).filter(function(v){ return v.id !== j.id; });
+      delete S.five[j.id]; delete S.out[j.id]; delete S.num[j.id]; delete S.phon[j.id];
+      save(); renderCompo(); renderScript();
+    });
+    marks.appendChild(bd);
+  }
+  row.appendChild(marks);
+  li.appendChild(row);
+  return li;
+}
+
+function buildAddForm(t){
+  var fj = el("div", "addform");
+  var jn = document.createElement("input"); jn.placeholder = "N°"; jn.inputMode = "numeric";
+  var jp = document.createElement("input"); jp.placeholder = "Prénom";
+  var jf = document.createElement("input"); jf.placeholder = "Nom";
+  var jpo = document.createElement("select");
+  ["", "1 - Meneur", "2 - Arrière", "3 - Ailier", "4 - Ailier fort", "5 - Pivot"].forEach(function(p){
+    var o = el("option", null, p || "Poste (facultatif)"); o.value = p; jpo.appendChild(o);
+  });
+  var jnat = document.createElement("input"); jnat.placeholder = "Nationalité (facultatif)";
+  var jph = document.createElement("input"); jph.placeholder = "Prononciation (facultatif)";
+  jpo.className = "full"; jnat.className = "full"; jph.className = "full";
+  var acts = el("div", "acts");
+  var ok = el("button", "btn primary sm", "Ajouter le joueur");
+  var no = el("button", "btn ghost sm", "Annuler");
+  acts.appendChild(ok); acts.appendChild(no);
+  [jn, jp, jf, jpo, jnat, jph, acts].forEach(function(n){ fj.appendChild(n); });
+
+  ok.addEventListener("click", function(){
+    if(!jp.value.trim() && !jf.value.trim()){ toast("Indique au moins un nom."); return; }
+    var id = uid("x");
+    if(!S.extra[t.key]) S.extra[t.key] = [];
+    S.extra[t.key].push({
+      id:id, prenom:jp.value.trim(), nom:jf.value.trim(), numero:jn.value.trim(),
+      poste:jpo.value, poste_court:jpo.value.split(" - ")[0] || "",
+      nationalite:jnat.value.trim() || null, code_pays:null,
+      taille:null, age:null, photo:null, stats:{}, stats_precedentes:null, ajoute:true
+    });
+    if(jph.value.trim()) S.phon[id] = jph.value.trim();
+    jn.value = jp.value = jf.value = jnat.value = jph.value = ""; jpo.value = "";
+    save(); renderCompo(); renderScript();
+    toast("Joueur ajouté.");
+  });
+  no.addEventListener("click", function(){ fj.classList.remove("open"); });
+
+  var fs = el("div", "addform");
+  var sp = document.createElement("input"); sp.placeholder = "Prénom";
+  var sf = document.createElement("input"); sf.placeholder = "Nom";
+  var sr = document.createElement("select");
+  ["Entraineur", "Entraineur adjoint", "Preparateur physique", "Kinesitherapeute",
+   "Medecin", "Team manager", "Statisticien"].forEach(function(r){
+    var o = el("option", null, r); o.value = r; sr.appendChild(o);
+  });
+  sp.className = "full"; sf.className = "full"; sr.className = "full";
+  var sacts = el("div", "acts");
+  var sok = el("button", "btn primary sm", "Ajouter au staff");
+  var sno = el("button", "btn ghost sm", "Annuler");
+  sacts.appendChild(sok); sacts.appendChild(sno);
+  [sr, sp, sf, sacts].forEach(function(n){ fs.appendChild(n); });
+
+  sok.addEventListener("click", function(){
+    if(!sp.value.trim() && !sf.value.trim()){ toast("Indique au moins un nom."); return; }
+    if(!S.extraStaff[t.key]) S.extraStaff[t.key] = [];
+    S.extraStaff[t.key].push({id:uid("s"), prenom:sp.value.trim(), nom:sf.value.trim(),
+                              role:sr.value, role_code:"", photo:null, ajoute:true});
+    sp.value = sf.value = "";
+    save(); renderCompo(); renderScript();
+    toast("Membre du staff ajouté.");
+  });
+  sno.addEventListener("click", function(){ fs.classList.remove("open"); });
+
+  return {joueur:fj, staff:fs};
+}
+
+function createTeam(side){
+  demander({titre:"Créer une équipe", message:"Nom de l'équipe", placeholder:"ex. Sélection régionale",
+            valider:"Créer"}).then(function(nom){
+    if(nom === null || !nom.trim()){ renderCompo(); return; }
+    return demander({titre:"Couleur du club", message:"Code hexadécimal, facultatif.",
+                     placeholder:"#C8102E", valider:"Terminer"}).then(function(coul){
+      var t = {id:uid("c:"), nom:nom.trim(), couleur:(coul || "").trim() || null, joueurs:[], staff:[]};
+      S.customTeams.push(t);
+      side.compId = "custom"; side.teamId = t.id;
+      save(); renderCompo(); renderScript();
+      toast("Équipe créée. Ajoute ses joueurs avec « Ajouter un joueur ».");
+    });
+  });
+}
+
+$("b-newteam").addEventListener("click", function(){ createTeam(S.home); });
+$("f-date").addEventListener("change", function(e){ S.date = e.target.value; save(); renderScript(); });
+
+/* ============ officiels : affectation par rencontre ============ */
+function annuaireDe(cat){ return cat === "arb" ? S.arbitres : S.table; }
+function personne(cat, id){
+  return annuaireDe(cat).filter(function(p){ return p.id === id; })[0] || null;
+}
+
+function renderSlots(){
+  var total = 0;
+  [["m-arb", "arb"], ["m-tab", "tab"]].forEach(function(cfg){
+    var box = $(cfg[0]), cat = cfg[1];
+    box.innerHTML = "";
+    var slots = S.roles[cat];
+    if(!annuaireDe(cat).length){
+      var v = el("div", "vidannuaire");
+      v.appendChild(el("span", null, "Ton annuaire est vide : crée d'abord les personnes, tu pourras ensuite les affecter."));
+      var ba = el("button", "btn sm primary", cat === "arb" ? "＋ Créer un arbitre" : "＋ Créer un officiel");
+      ba.addEventListener("click", function(){ ajouterAuRepertoire(cat); });
+      v.appendChild(ba);
+      box.appendChild(v);
+    }
+    var wrap = el("div", "slots");
+    slots.forEach(function(sl, i){
+      var row = el("div", "slot");
+
+      var ri = document.createElement("input");
+      ri.type = "text"; ri.className = "rolein"; ri.value = sl.role;
+      ri.setAttribute("aria-label", "Rôle");
+      ri.addEventListener("change", function(){ sl.role = ri.value.trim() || "Rôle"; save(); renderScript(); });
+      row.appendChild(ri);
+
+      var p = sl.personId ? personne(cat, sl.personId) : null;
+      var pb = el("button", "person" + (p ? "" : " vide"),
+                  p ? (p.prenom + " " + (p.nom || "").toUpperCase()).trim() : "Non désigné — choisir…");
+      pb.addEventListener("click", function(){
+        choisirPersonne(annuaireDe(cat), sl.role).then(function(r){
+          if(r === null) return;
+          if(r.creer !== undefined){
+            var pieces = r.creer.split(" ");
+            return saisirPersonne({prenom:pieces[0] || "", nom:pieces.slice(1).join(" ")},
+                                  "Nouvelle personne").then(function(np){
+              if(!np) return;
+              var nid = uid("o");
+              annuaireDe(cat).push({id:nid, prenom:np.prenom, nom:np.nom, phon:np.phon});
+              trierAnnuaire(cat);
+              sl.personId = nid;
+              save(); renderSlots(); renderOff(); renderScript(); renderData();
+            });
+          }
+          sl.personId = r.personId;
+          save(); renderSlots(); renderScript();
+        });
+      });
+      row.appendChild(pb);
+
+      var x = el("button", "sx", "✕");
+      x.title = "Retirer ce rôle";
+      x.addEventListener("click", function(){
+        S.roles[cat].splice(i, 1); save(); renderSlots(); renderScript();
+      });
+      row.appendChild(x);
+      wrap.appendChild(row);
+      if(sl.personId) total++;
+    });
+    box.appendChild(wrap);
+
+    var add = el("button", "btn sm ghost", "＋ Ajouter un rôle");
+    add.addEventListener("click", function(){
+      demander({titre:"Nouveau rôle", message:"Comment s'appelle ce poste ?",
+                placeholder:"ex. Commissaire", valider:"Ajouter"}).then(function(v){
+        if(v === null || !v.trim()) return;
+        S.roles[cat].push(nouveauRole(v.trim()));
+        save(); renderSlots(); renderScript();
+      });
+    });
+    box.appendChild(add);
+  });
+  $("n-match-off").textContent = total + " désignés pour cette rencontre";
+}
+function trierAnnuaire(cat){
+  annuaireDe(cat).sort(function(a, b){ return (a.nom || "").localeCompare(b.nom || "", "fr"); });
+}
+
+/* ============ conducteur ============ */
+function renderScript(){
+  var m = $("script"); m.innerHTML = "";
+  var home = resolveTeam(S.home), away = resolveTeam(S.away);
+  if(!home && !away){
+    m.appendChild(el("div", "empty",
+      "Choisis les équipes dans l'onglet Composition — le conducteur se remplit tout seul."));
+    return;
+  }
+  var step = {n:1};
+  if(away) teamSection(m, away, "Visiteurs", step);
+  officialsSection(m, "Arbitres", "arb", step);
+  officialsSection(m, "Table de marque", "tab", step);
+  if(home) teamSection(m, home, "Recevants", step);
+}
+
+function teamSection(m, t, label, step){
+  var ban = el("div", "banner");
+  if(t.couleur) ban.style.background = t.couleur; else ban.className = "banner plain";
+  ban.appendChild(teamLogo(t));
+  var box = el("div");
+  box.appendChild(el("div", "lab", label));
+  box.appendChild(el("h2", null, t.nom));
+  ban.appendChild(box);
+  m.appendChild(ban);
+
+  if(t.staff && t.staff.length){
+    var b1 = block(step.n++, "Staff", t.staff.length + " personnes");
+    var c1 = el("div", "callout");
+    t.staff.forEach(function(s){ c1.appendChild(line({person:s, num:"", sub:s.role, phon:null, stat:""})); });
+    b1.appendChild(c1); m.appendChild(b1);
+  }
+  var subs = subsOf(t);
+  if(subs.length){
+    var b2 = block(step.n++, "Remplaçants", subs.length + " joueurs");
+    var c2 = el("div", "callout");
+    subs.forEach(function(j){ c2.appendChild(playerCall(j)); });
+    b2.appendChild(c2); m.appendChild(b2);
+  }
+  var five = fiveOf(t);
+  var b3 = block(step.n++, "5 majeur", five.length + "/5");
+  var c3 = el("div", "callout");
+  if(!five.length) c3.appendChild(el("div", "empty", "Aucun titulaire sélectionné."));
+  else five.forEach(function(j){ c3.appendChild(playerCall(j)); });
+  b3.appendChild(c3); m.appendChild(b3);
+}
+
+function officialsSection(m, titre, cat, step){
+  var slots = S.roles[cat].filter(function(sl){ return sl.personId; });
+  var b = block(step.n++, titre, slots.length ? slots.length + " désignés" : "à compléter");
+  var c = el("div", "callout");
+  if(!slots.length){
+    c.appendChild(el("div", "empty",
+      "Aucune désignation — attribue les rôles dans Composition, en bas de l'écran."));
+  } else {
+    slots.forEach(function(sl){
+      var p = personne(cat, sl.personId);
+      if(!p) return;
+      c.appendChild(line({person:p, num:"", sub:sl.role, phon:p.phon, stat:""}));
+    });
+  }
+  b.appendChild(c); m.appendChild(b);
+}
+
+function block(step, title, sub){
+  var b = el("div", "blk");
+  var h = el("div", "blk-h");
+  h.appendChild(el("span", "step", String(step)));
+  h.appendChild(el("h3", null, title));
+  if(sub) h.appendChild(el("span", "sub", sub));
+  b.appendChild(h);
+  return b;
+}
+
+function line(o){
+  var p = o.person;
+  var d = el("div", "call");
+  d.appendChild(el("div", "n", o.num || ""));
+  d.appendChild(avatar(p));
+  var body = el("div", "body");
+  var big = el("div", "big");
+  big.appendChild(document.createTextNode((p.prenom || "") + " "));
+  big.appendChild(el("span", "last", (p.nom || "").toUpperCase()));
+  body.appendChild(big);
+  if(o.phon) body.appendChild(el("div", "say", "« " + o.phon + " »"));
+  var l2 = el("div", "line2");
+  if(o.sub) l2.appendChild(el("span", null, o.sub));
+  if(o.stat && S.showStats) l2.appendChild(el("span", null, o.stat));
+  if(l2.childNodes.length) body.appendChild(l2);
+  d.appendChild(body);
+  return d;
+}
+
+function playerCall(j){
+  var sub = [];
+  var nat = (flag(j.code_pays) + " " + (j.nationalite || "")).trim();
+  if(nat) sub.push(nat);
+  if(j.poste_court) sub.push(j.poste_court);
+  if(j.taille) sub.push(j.taille + " cm");
+  return line({person:j, num:numOf(j), sub:sub.join(" · "), phon:S.phon[j.id], stat:statLine(j)});
+}
+
+$("c-stats").addEventListener("click", function(){
+  S.showStats = !S.showStats;
+  this.textContent = S.showStats ? "Masquer les stats" : "Afficher les stats";
+  save(); renderScript();
+});
+$("c-photos").addEventListener("click", function(){
+  S.showPhotos = !S.showPhotos;
+  this.textContent = S.showPhotos ? "Masquer les photos" : "Afficher les photos";
+  save(); renderCompo(); renderScript();
+});
+$("c-print").addEventListener("click", function(){ window.print(); });
+$("c-theme").addEventListener("click", function(){
+  var cur = document.documentElement.getAttribute("data-theme");
+  var next = cur === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  S.theme = next; save();
+});
+
+/* ============ nouvelle rencontre ============ */
+$("b-reset").addEventListener("click", function(){
+  confirmer({
+    titre:"Nouvelle rencontre", valider:"Repartir à zéro", danger:true,
+    message:"La composition en cours est effacée. Ce qui est conservé :",
+    details:["tes annuaires d'arbitres et d'officiels",
+             "toutes tes prononciations",
+             "tes équipes créées et les joueurs ajoutés à la main",
+             "les rôles de la table de marque (seules les personnes sont retirées)"]
+  }).then(function(ok){
+    if(!ok) return;
+    S.home = {compId:null, teamId:null};
+    S.away = {compId:null, teamId:null};
+    S.five = {}; S.out = {}; S.num = {}; S.date = "";
+    S.roles.arb.forEach(function(sl){ sl.personId = null; });
+    S.roles.tab.forEach(function(sl){ sl.personId = null; });
+    $("f-date").value = "";
+    save(); renderAll(); gotoTab("compo");
+    toast("Prêt pour une nouvelle rencontre.");
+  });
+});
+
+/* ============ annuaires ============ */
+function ajouterAuRepertoire(cat){
+  saisirPersonne(null, cat === "arb" ? "Nouvel arbitre" : "Nouvel officiel de table").then(function(p){
+    if(!p) return;
+    annuaireDe(cat).push({id:uid("o"), prenom:p.prenom, nom:p.nom, phon:p.phon});
+    trierAnnuaire(cat);
+    save(); renderOff(); renderSlots(); renderData();
+    toast("Ajouté à l'annuaire.");
+  });
+}
+$("a-add").addEventListener("click", function(){ ajouterAuRepertoire("arb"); });
+$("t-add").addEventListener("click", function(){ ajouterAuRepertoire("tab"); });
+$("a-search").addEventListener("input", function(){ renderOff(); });
+$("t-search").addEventListener("input", function(){ renderOff(); });
+
+function renderOff(){
+  renderRepertoire($("l-arb"), "arb", $("a-search").value, $("n-arb"));
+  renderRepertoire($("l-tab"), "tab", $("t-search").value, $("n-tab"));
+}
+function renderRepertoire(ul, cat, q, counter){
+  var list = annuaireDe(cat);
+  ul.innerHTML = "";
+  var f = sansAccent((q || "").trim());
+  var vus = list.filter(function(p){ return !f || sansAccent(p.prenom + " " + p.nom).indexOf(f) >= 0; });
+  var designes = S.roles[cat].filter(function(sl){ return sl.personId; }).length;
+  counter.textContent = list.length + " dans l'annuaire · " + designes + " désignés ce soir";
+
+  if(!list.length){
+    var li0 = el("li", null, "Annuaire vide — ajoute la première personne.");
+    li0.style.color = "var(--muted)"; li0.style.fontSize = "13px";
+    ul.appendChild(li0);
+    return;
+  }
+  if(!vus.length){
+    var li1 = el("li", null, "Aucun nom ne correspond à « " + q + " ».");
+    li1.style.color = "var(--muted)"; li1.style.fontSize = "13px";
+    ul.appendChild(li1);
+    return;
+  }
+  vus.forEach(function(p){
+    var li = el("li");
+    var who = el("div", "who");
+    who.style.flex = "1"; who.style.minWidth = "0";
+    who.appendChild(el("b", null, (p.prenom + " " + (p.nom || "").toUpperCase()).trim()));
+    var r = S.roles[cat].filter(function(sl){ return sl.personId === p.id; })[0];
+    who.appendChild(el("div", "r",
+      (p.phon ? "« " + p.phon + " »" : "Pas de prononciation notée") + (r ? "  ·  " + r.role + " ce soir" : "")));
+    li.appendChild(who);
+
+    var ed = el("button", "btn ghost sm", "Modifier");
+    ed.addEventListener("click", function(){
+      saisirPersonne(p, "Modifier la fiche").then(function(np){
+        if(!np) return;
+        p.prenom = np.prenom; p.nom = np.nom; p.phon = np.phon;
+        trierAnnuaire(cat);
+        save(); renderOff(); renderSlots(); renderScript();
+      });
+    });
+    li.appendChild(ed);
+
+    var del = el("button", "btn ghost sm danger", "Retirer");
+    del.addEventListener("click", function(){
+      confirmer({titre:"Retirer de l'annuaire", danger:true, valider:"Retirer",
+                 message:(p.prenom + " " + p.nom).trim() + " sera supprimé définitivement."}).then(function(ok){
+        if(!ok) return;
+        if(cat === "arb") S.arbitres = S.arbitres.filter(function(x){ return x.id !== p.id; });
+        else S.table = S.table.filter(function(x){ return x.id !== p.id; });
+        S.roles[cat].forEach(function(sl){ if(sl.personId === p.id) sl.personId = null; });
+        save(); renderOff(); renderSlots(); renderScript(); renderData();
+      });
+    });
+    li.appendChild(del);
+    ul.appendChild(li);
+  });
+}
+
+/* ============ données ============ */
+function renderData(){
+  if(!DATA) return;
+  $("d-saison").textContent = DATA.saison || "—";
+  var d = DATA.genere_le ? new Date(DATA.genere_le) : null;
+  $("d-maj").textContent = d ? d.toLocaleString("fr-FR", {dateStyle:"long", timeStyle:"short"}) : "—";
+  var eq = 0, jo = 0;
+  DATA.competitions.forEach(function(c){
+    eq += c.equipes.length;
+    c.equipes.forEach(function(e){ jo += e.joueurs.length; });
+  });
+  $("d-count").textContent = DATA.competitions.length + " compétitions · " + eq + " équipes · " + jo + " joueurs";
+  var ajoutes = 0;
+  for(var k in S.extra) ajoutes += S.extra[k].length;
+  $("d-prep").textContent = S.arbitres.length + " arbitres · " + S.table.length + " officiels · "
+    + Object.keys(S.phon).length + " prononciations · " + S.customTeams.length + " équipes créées · "
+    + ajoutes + " joueurs ajoutés";
+  $("d-note").textContent = "Tout est stocké sur cet appareil : l'application fonctionne sans réseau. "
+    + "L'actualisation ne sert qu'à récupérer les mouvements d'effectif et les statistiques les plus récentes. "
+    + "Ta préparation n'est jamais écrasée par une actualisation.";
+  $("datalabel").textContent = DATA.saison || "";
+}
+$("d-sync").addEventListener("click", function(){ refresh(false); });
+$("d-export").addEventListener("click", function(){
+  var txt = JSON.stringify(S, null, 2);
+  var copied = false;
+  function finish(){
+    try{
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([txt], {type:"application/json"}));
+      a.download = "speaker-lnb-preparation.json";
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 0);
+    }catch(e){}
+    toast(copied ? "Préparation copiée dans le presse-papier (et téléchargée si autorisé)."
+                 : "Préparation téléchargée.");
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){ copied = true; finish(); }, finish);
+  } else finish();
+});
+$("d-import").addEventListener("click", function(){
+  var inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "application/json";
+  inp.addEventListener("change", function(){
+    var f = inp.files[0]; if(!f) return;
+    var rd = new FileReader();
+    rd.onload = function(){
+      try{
+        var o = JSON.parse(rd.result);
+        for(var k in o){ if(o[k] !== undefined && S[k] !== undefined) S[k] = o[k]; }
+        if(!S.roles || !S.roles.arb) S.roles = {arb:ROLES_ARB.map(nouveauRole), tab:ROLES_TAB.map(nouveauRole)};
+        save(); $("f-date").value = S.date || ""; renderAll();
+        toast("Préparation importée.");
+      }catch(e){ toast("Fichier illisible."); }
+    };
+    rd.readAsText(f);
+  });
+  inp.click();
+});
+
+/* ============ réseau ============ */
+function net(){
+  var on = navigator.onLine;
+  $("netdot").className = "dot" + (on ? "" : " off");
+  $("netlabel").textContent = on ? "En ligne" : "Hors ligne — tout reste disponible";
+}
+window.addEventListener("online", net);
+window.addEventListener("offline", net);
+
+/* ============ démarrage ============ */
+load();
+if(S.theme) document.documentElement.setAttribute("data-theme", S.theme);
+$("c-stats").textContent = S.showStats ? "Masquer les stats" : "Afficher les stats";
+$("c-photos").textContent = S.showPhotos ? "Masquer les photos" : "Afficher les photos";
+$("f-date").value = S.date || "";
+net();
+renderOff();
+
+loadData().then(function(d){
+  DATA = d;
+  if(!DATA || !DATA.competitions || !DATA.competitions.length) throw new Error("vide");
+  renderAll();
+}).catch(function(){
+  $("t-home").innerHTML = '<div class="team"><div class="empty">Données LNB indisponibles. '
+    + 'Connecte-toi une fois pour les télécharger : ensuite tout fonctionne hors ligne.</div></div>';
+});
+
+if("serviceWorker" in navigator && location.protocol.indexOf("http") === 0){
+  try{ navigator.serviceWorker.register("sw.js"); }catch(e){}
+}
+})();
+</script>

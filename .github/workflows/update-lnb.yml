@@ -1,0 +1,57 @@
+name: Mise a jour des donnees LNB
+
+on:
+  schedule:
+    - cron: "0 5 * * *"        # tous les jours a 07h00 (Paris, heure d'ete)
+  workflow_dispatch:            # bouton pour lancer a la demande
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer Pillow (redimensionnement des logos et photos)
+        run: pip install --quiet pillow
+
+      - name: Recuperer les effectifs et statistiques
+        run: python scraper/scrape_lnb.py ${{ vars.LNB_SEASON || '2026' }} lnb-data.json
+
+      - name: Verifier que le fichier est exploitable
+        run: |
+          python - <<'PY'
+          import json, sys
+          d = json.load(open("lnb-data.json", encoding="utf-8"))
+          equipes = [e for c in d["competitions"] for e in c["equipes"]]
+          joueurs = sum(len(e["joueurs"]) for e in equipes)
+          print(f"{len(equipes)} equipes, {joueurs} joueurs")
+
+          # Garde-fous : on ne remplace jamais les donnees par un fichier appauvri.
+          if joueurs < 700:
+              sys.exit(f"Trop peu de joueurs ({joueurs}) — mise a jour annulee.")
+          vides = [e["nom"] for e in equipes if not e["joueurs"]]
+          if vides:
+              sys.exit(f"Effectifs vides, l'API a flanche : {', '.join(vides)} — mise a jour annulee.")
+          sans_logo = [e["nom"] for e in equipes if not e.get("logo")]
+          if len(sans_logo) > 5:
+              sys.exit(f"{len(sans_logo)} equipes sans logo — mise a jour annulee.")
+          PY
+
+      - name: Publier si quelque chose a change
+        run: |
+          if git diff --quiet -- lnb-data.json; then
+            echo "Aucun changement."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lnb-data.json
+          git commit -m "Donnees LNB du $(date -u +%d/%m/%Y)"
+          git push
