@@ -312,7 +312,7 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
       <div class="brand">Speaker <span>LNB</span></div>
       <div class="status">
         <span class="dot" id="netdot"></span><span id="netlabel">Hors ligne</span>
-        <span aria-hidden="true">·</span><span id="datalabel">—</span>
+        <span aria-hidden="true">·</span><span id="datalabel">—</span><span id="synclabel"></span>
       </div>
     </div>
     <nav class="tabs" role="tablist">
@@ -393,6 +393,9 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
         <div class="row"><span class="k">Dernière mise à jour</span><span class="v" id="d-maj">—</span>
           <span class="a"><button class="btn" id="d-sync">Actualiser</button></span></div>
         <div class="row"><span class="k">Contenu</span><span class="v" id="d-count">—</span></div>
+        <div class="row"><span class="k">Synchronisation Mac ↔ iPad</span>
+          <span class="v" id="d-sync-etat">Inactive</span>
+          <span class="a"><button class="btn" id="d-sync-conf">Configurer</button></span></div>
         <div class="row"><span class="k">Ma préparation</span><span class="v" id="d-prep">—</span>
           <span class="a">
             <button class="btn" id="d-export">Exporter</button>
@@ -456,7 +459,7 @@ var S = {
   roles:{arb:[], tab:[]},           // affectations propres a la rencontre
   showStats:true, showPhotos:true, theme:null
 };
-function save(){ try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){} }
+function save(){ try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){} marquerSale(); }
 
 function load(){
   try{
@@ -1516,9 +1519,212 @@ $("d-import").addEventListener("click", function(){
   inp.click();
 });
 
+
+/* ============ synchronisation entre appareils ============ */
+/* La preparation entiere tient en quelques kilo-octets : on l'echange en bloc
+   plutot que par differences, ce qui evite toute fusion hasardeuse. L'appareil
+   annonce la revision sur laquelle il s'appuie ; si le serveur a bouge entre
+   temps, c'est un conflit et l'utilisateur tranche. */
+var SYNC = {url:"", cle:"", rev:0, appareil:"", sale:false, minuteur:null,
+            boucle:null, applique:false};
+
+function chargerSync(){
+  try{
+    var o = JSON.parse(localStorage.getItem("speaker-lnb:sync") || "{}");
+    SYNC.url = o.url || ""; SYNC.cle = o.cle || ""; SYNC.rev = o.rev || 0;
+    SYNC.appareil = o.appareil || uid("d");
+  }catch(e){ SYNC.appareil = uid("d"); }
+}
+function sauverSync(){
+  try{
+    localStorage.setItem("speaker-lnb:sync", JSON.stringify(
+      {url:SYNC.url, cle:SYNC.cle, rev:SYNC.rev, appareil:SYNC.appareil}));
+  }catch(e){}
+}
+function syncPret(){ return !!(SYNC.url && SYNC.cle); }
+function adresse(){
+  return SYNC.url + (SYNC.url.indexOf("?") >= 0 ? "&" : "?") + "k=" + encodeURIComponent(SYNC.cle);
+}
+function etatSync(txt){
+  var e = $("d-sync-etat"); if(e) e.textContent = txt;
+  var h = $("synclabel"); if(h) h.textContent = syncPret() ? " · sync " + txt : "";
+}
+
+function marquerSale(){
+  if(SYNC.applique || !syncPret()) return;
+  SYNC.sale = true;
+  etatSync("modifié");
+  clearTimeout(SYNC.minuteur);
+  SYNC.minuteur = setTimeout(function(){ pousser(false); }, 900);
+}
+
+function pousser(force){
+  if(!syncPret()) return;
+  if(!navigator.onLine){ etatSync("hors ligne — reprise au retour du réseau"); return; }
+  etatSync("envoi…");
+  fetch(SYNC.url, {
+    method:"PUT",
+    headers:{"Content-Type":"application/json", "X-Sync-Key":SYNC.cle},
+    body: JSON.stringify({baseRev:SYNC.rev, device:SYNC.appareil, force:!!force, data:S})
+  }).then(function(r){
+    if(r.status === 409) return r.json().then(function(c){ c.premier = false; choisirVersion(c); });
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    return r.json().then(function(o){
+      SYNC.rev = o.rev; SYNC.sale = false; sauverSync(); etatSync("à jour");
+    });
+  }).catch(function(){ etatSync("hors ligne — reprise au retour du réseau"); });
+}
+
+function tirer(){
+  if(!syncPret() || !navigator.onLine || SYNC.sale) return;
+  fetch(adresse(), {headers:{"X-Sync-Key":SYNC.cle}, cache:"no-store"})
+    .then(function(r){ return r.json(); })
+    .then(function(o){
+      if(!o || !o.data){ etatSync("à jour"); return; }
+      if(o.rev === SYNC.rev){ etatSync("à jour"); return; }
+      if(o.device === SYNC.appareil){ SYNC.rev = o.rev; sauverSync(); etatSync("à jour"); return; }
+      appliquer(o);
+      toast("Préparation reçue de ton autre appareil.");
+    })
+    .catch(function(){ etatSync("hors ligne — reprise au retour du réseau"); });
+}
+
+function appliquer(o){
+  SYNC.applique = true;     // empeche le renvoi immediat de ce qu'on vient de recevoir
+  try{
+    for(var k in o.data){ if(o.data[k] !== undefined && S[k] !== undefined) S[k] = o.data[k]; }
+    if(!S.roles || !S.roles.arb || !S.roles.arb.length){
+      S.roles = {arb:ROLES_ARB.map(nouveauRole), tab:ROLES_TAB.map(nouveauRole)};
+    }
+    SYNC.rev = o.rev; SYNC.sale = false;
+    save(); sauverSync();
+    $("f-date").value = S.date || "";
+    renderAll();
+  } finally { SYNC.applique = false; }
+  etatSync("à jour");
+}
+
+/** Deux versions divergent : jamais de fusion silencieuse, l'utilisateur tranche. */
+function choisirVersion(c){
+  var quand = c.updatedAt ? new Date(c.updatedAt).toLocaleString("fr-FR",
+                {dateStyle:"short", timeStyle:"short"}) : "date inconnue";
+  dialogue(function(dg, fermer){
+    dg.appendChild(el("h3", null, c.premier ? "Préparation déjà en ligne" : "Deux versions différentes"));
+    var body = el("div", "body");
+    body.appendChild(el("p", "msg", c.premier
+      ? "Une préparation existe déjà sur ce service. Laquelle garder ?"
+      : "Cet appareil et l'autre ont été modifiés chacun de leur côté. Laquelle garder ?"));
+    var ul = el("ul", "details");
+    ul.appendChild(el("li", null, "Cet appareil : la préparation que tu as sous les yeux"));
+    ul.appendChild(el("li", null, "L'autre appareil : enregistrée le " + quand));
+    body.appendChild(ul);
+    dg.appendChild(body);
+    var foot = el("div", "foot");
+    var rien = el("button", "btn ghost", "Plus tard");
+    rien.addEventListener("click", function(){ fermer(null); });
+    var autre = el("button", "btn", "Prendre l'autre appareil");
+    autre.addEventListener("click", function(){
+      fermer(null);
+      if(c.data){ appliquer(c); toast("Version de l'autre appareil appliquée."); }
+    });
+    var ici = el("button", "btn primary", "Garder cet appareil");
+    ici.addEventListener("click", function(){
+      fermer(null);
+      SYNC.rev = c.rev;      // on repart de la revision serveur pour ecraser proprement
+      pousser(true);
+    });
+    foot.appendChild(rien); foot.appendChild(autre); foot.appendChild(ici);
+    dg.appendChild(foot);
+  });
+}
+
+function genererCle(){
+  var a = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  var s = "";
+  if(window.crypto && window.crypto.getRandomValues){
+    var buf = new Uint8Array(32);
+    window.crypto.getRandomValues(buf);
+    for(var i = 0; i < 32; i++) s += a.charAt(buf[i] % a.length);
+  } else {
+    for(var j = 0; j < 32; j++) s += a.charAt(Math.floor(Math.random() * a.length));
+  }
+  return s;
+}
+
+function configurerSync(){
+  dialogue(function(dg, fermer){
+    dg.appendChild(el("h3", null, "Synchronisation"));
+    var body = el("div", "body");
+    body.appendChild(el("p", "msg",
+      "Saisis la même adresse et la même clé sur ton Mac et sur ton iPad. "
+      + "Seule ta préparation circule : les données LNB, elles, se mettent à jour toutes seules."));
+    var lu = el("label", "dlab", "Adresse du service");
+    var iu = document.createElement("input");
+    iu.type = "text"; iu.className = "din"; iu.value = SYNC.url;
+    iu.placeholder = "https://speaker-lnb-sync.xxx.workers.dev";
+    lu.appendChild(iu); body.appendChild(lu);
+    var lk = el("label", "dlab", "Clé partagée");
+    var ik = document.createElement("input");
+    ik.type = "text"; ik.className = "din"; ik.value = SYNC.cle;
+    ik.placeholder = "24 caractères minimum";
+    lk.appendChild(ik); body.appendChild(lk);
+    var gen = el("button", "btn sm ghost", "Générer une clé");
+    gen.addEventListener("click", function(){ ik.value = genererCle(); });
+    body.appendChild(gen);
+    body.appendChild(el("p", "msg",
+      "Cette clé protège l'accès à ta préparation : garde-la pour toi."));
+    dg.appendChild(body);
+
+    var foot = el("div", "foot");
+    var off = el("button", "btn ghost danger", "Désactiver");
+    off.addEventListener("click", function(){
+      SYNC.url = ""; SYNC.cle = ""; SYNC.rev = 0; sauverSync();
+      clearInterval(SYNC.boucle); SYNC.boucle = null;
+      etatSync("inactive"); fermer(null); renderData();
+      toast("Synchronisation désactivée. Ta préparation reste sur cet appareil.");
+    });
+    var annul = el("button", "btn ghost", "Annuler");
+    annul.addEventListener("click", function(){ fermer(null); });
+    var ok = el("button", "btn primary", "Activer");
+    ok.addEventListener("click", function(){
+      var u = iu.value.trim().replace(/\/+$/, "");
+      var k = ik.value.trim();
+      if(!/^https:\/\//.test(u)){ toast("L'adresse doit commencer par https://"); return; }
+      if(!/^[A-Za-z0-9_-]{24,80}$/.test(k)){
+        toast("La clé doit faire au moins 24 caractères (lettres, chiffres, - et _)."); return;
+      }
+      SYNC.url = u; SYNC.cle = k; SYNC.rev = 0; sauverSync();
+      fermer(null); etatSync("connexion…"); demarrerSync(); premiereSync();
+    });
+    foot.appendChild(off); foot.appendChild(annul); foot.appendChild(ok);
+    dg.appendChild(foot);
+  });
+}
+
+/** Premiere activation : on ne decide jamais a la place de l'utilisateur. */
+function premiereSync(){
+  if(!syncPret()) return;
+  fetch(adresse(), {headers:{"X-Sync-Key":SYNC.cle}, cache:"no-store"})
+    .then(function(r){ return r.json(); })
+    .then(function(o){
+      if(!o || !o.data){ pousser(true); toast("Synchronisation activée."); return; }
+      o.premier = true;
+      choisirVersion(o);
+    })
+    .catch(function(){ etatSync("service injoignable — vérifie l'adresse"); });
+}
+
+function demarrerSync(){
+  clearInterval(SYNC.boucle);
+  if(!syncPret()){ etatSync("inactive"); return; }
+  SYNC.boucle = setInterval(tirer, 3000);
+  tirer();
+}
+
 /* ============ réseau ============ */
 function net(){
   var on = navigator.onLine;
+  if(on && syncPret()){ if(SYNC.sale) pousser(false); else tirer(); }
   $("netdot").className = "dot" + (on ? "" : " off");
   $("netlabel").textContent = on ? "En ligne" : "Hors ligne — tout reste disponible";
 }
@@ -1527,12 +1733,19 @@ window.addEventListener("offline", net);
 
 /* ============ démarrage ============ */
 load();
+chargerSync();
 if(S.theme) document.documentElement.setAttribute("data-theme", S.theme);
 $("c-stats").textContent = S.showStats ? "Masquer les stats" : "Afficher les stats";
 $("c-photos").textContent = S.showPhotos ? "Masquer les photos" : "Afficher les photos";
 $("f-date").value = S.date || "";
 net();
 renderOff();
+etatSync(syncPret() ? "connexion…" : "inactive");
+demarrerSync();
+document.addEventListener("visibilitychange", function(){
+  if(!document.hidden && syncPret()) tirer();
+});
+$("d-sync-conf").addEventListener("click", configurerSync);
 
 loadData().then(function(d){
   DATA = d;

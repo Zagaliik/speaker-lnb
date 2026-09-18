@@ -1,0 +1,9 @@
+name = "speaker-lnb-sync"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# L'identifiant est fourni par : npx wrangler d1 create speaker-lnb
+[[d1_databases]]
+binding = "DB"
+database_name = "speaker-lnb"
+database_id = "À-REMPLACER"
