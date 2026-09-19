@@ -55,14 +55,38 @@ self.addEventListener("fetch", function(e){
     return;
   }
 
-  // Coquille de l'application : cache-first.
+  // La page elle-meme : reseau d'abord, cache en secours.
+  // Sans cela, une mise a jour publiee ne parviendrait jamais aux appareils :
+  // le cache servirait l'ancienne version indefiniment.
+  var estLaPage = req.mode === "navigate"
+    || url.pathname.endsWith("/")
+    || url.pathname.endsWith("/index.html");
+
+  if(url.origin === location.origin && estLaPage){
+    e.respondWith(
+      fetch(req).then(function(res){
+        if(res && res.status === 200){
+          var copie = res.clone();
+          caches.open(CACHE).then(function(c){ c.put("./index.html", copie); });
+        }
+        return res;
+      }).catch(function(){
+        return caches.match("./index.html").then(function(hit){
+          return hit || caches.match("./");
+        });
+      })
+    );
+    return;
+  }
+
+  // Le reste de la coquille (icones, manifeste) : cache d'abord, il ne bouge pas.
   if(url.origin === location.origin){
     e.respondWith(
       caches.match(req).then(function(hit){
         return hit || fetch(req).then(function(res){
           if(res && res.status === 200){
-            var copy = res.clone();
-            caches.open(CACHE).then(function(c){ c.put(req, copy); });
+            var copie = res.clone();
+            caches.open(CACHE).then(function(c){ c.put(req, copie); });
           }
           return res;
         }).catch(function(){ return caches.match("./index.html"); })
