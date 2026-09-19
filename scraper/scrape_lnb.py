@@ -24,6 +24,10 @@ import urllib.error, urllib.parse, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
+# La LNB refuse les adresses des serveurs GitHub (403). Quand LNB_PROXY est defini,
+# toutes les requetes passent par le Worker Cloudflare, dont l'adresse est acceptee.
+PROXY = os.environ.get("LNB_PROXY", "").rstrip("/")
+
 API = "https://api-prod.lnb.fr/"
 TOKEN_URL = "https://lnb.fr/api/token"
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/152 Safari/537.36"
@@ -73,7 +77,8 @@ HAVE_SIPS = shutil.which("sips") is not None
 
 def _download(url):
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": UA, "Referer": "https://lnb.fr/"})
+        cible = (PROXY + "/lnb/img?u=" + urllib.parse.quote(url, safe="")) if PROXY else url
+        req = urllib.request.Request(cible, headers={"User-Agent": UA, "Referer": "https://lnb.fr/"})
         with urllib.request.urlopen(req, timeout=30) as r:
             return r.read()
     except Exception:
@@ -205,6 +210,8 @@ class Lnb:
         return self._tok
 
     def call(self, path, body=None, form=False, retries=3):
+        if PROXY:
+            return self._via_relais(path, body, form, retries)
         for attempt in range(retries):
             try:
                 headers = {
@@ -234,6 +241,25 @@ class Lnb:
                 if attempt == retries - 1:
                     raise
             time.sleep(1.5 * (attempt + 1))
+
+    def _via_relais(self, path, body, form, retries):
+        """Le Worker se charge du jeton et des en-tetes ; on ne transmet que le chemin
+        et le corps. Le staff attend un corps form-encode : on le serialise ici, le
+        relais le passe tel quel."""
+        if form and body is not None:
+            path = path + ("&" if "?" in path else "?") + urllib.parse.urlencode(body)
+            body = None
+        for attempt in range(retries):
+            try:
+                req = urllib.request.Request(
+                    PROXY + "/lnb/api",
+                    data=json.dumps({"path": path, "body": body}).encode(),
+                    headers={"Content-Type": "application/json", "User-Agent": UA})
+                return json.load(urllib.request.urlopen(req, timeout=60))
+            except Exception:
+                if attempt == retries - 1:
+                    raise
+                time.sleep(1.5 * (attempt + 1))
 
     def competitions(self, year):
         return self.call(f"competition/getMainCompetition?year={year}").get("data", [])

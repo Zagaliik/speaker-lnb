@@ -22,11 +22,21 @@
  *
  *   GET  /lnb/standings?cid=317
  *   GET  /lnb/calendar?abbrev=PROA&div=1&year=2026
+ *   POST /lnb/api        <- { path, body }   relais generique, chemins LNB seulement
+ *   GET  /lnb/img?u=...                      relais d'image, assets.altrstat.xyz seulement
+ *
+ * Ces deux dernieres routes existent parce que la LNB refuse les adresses des
+ * serveurs GitHub (403) : la collecte quotidienne passe donc par ici.
  * Ces deux routes sont publiques : elles ne renvoient que des donnees deja
  * publiques sur lnb.fr, et n'exposent aucune preparation.
  */
 
 const API = "https://api-prod.lnb.fr/";
+const ASSETS = "https://assets.altrstat.xyz/";
+
+// Le relais generique n'accepte que les chemins de l'API LNB : il ne doit jamais
+// pouvoir servir a joindre autre chose.
+const CHEMINS_LNB = /^(competition|teams|altrstats|match|common)\//;
 
 async function jeton() {
   const r = await fetch("https://lnb.fr/api/token", {
@@ -113,6 +123,42 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
 
     const url = new URL(request.url);
+
+    // Relais generique, pour la collecte quotidienne depuis GitHub.
+    if (url.pathname === "/lnb/api") {
+      if (request.method !== "POST") return reponse({ erreur: "methode_non_supportee" }, 405);
+      let corps;
+      try {
+        corps = await request.json();
+      } catch {
+        return reponse({ erreur: "json_invalide" }, 400);
+      }
+      const chemin = String(corps.path || "");
+      if (!CHEMINS_LNB.test(chemin)) return reponse({ erreur: "chemin_refuse" }, 403);
+      try {
+        return reponse(await appelLnb(chemin, corps.body));
+      } catch (e) {
+        return reponse({ erreur: "lnb_injoignable", detail: String(e.message || e) }, 502);
+      }
+    }
+
+    // Relais d'images, strictement limite au serveur d'assets de la LNB.
+    if (url.pathname === "/lnb/img") {
+      const cible = url.searchParams.get("u") || "";
+      if (!cible.startsWith(ASSETS)) return reponse({ erreur: "source_refusee" }, 403);
+      const r = await fetch(cible, {
+        headers: { "User-Agent": "Mozilla/5.0", Referer: "https://lnb.fr/" },
+      });
+      if (!r.ok) return reponse({ erreur: "image_indisponible", code: r.status }, 502);
+      return new Response(r.body, {
+        status: 200,
+        headers: {
+          ...CORS,
+          "Content-Type": r.headers.get("content-type") || "image/png",
+          "Cache-Control": "public, max-age=86400",
+        },
+      });
+    }
 
     // Relais LNB : pas de cle, ces donnees sont publiques.
     if (url.pathname.startsWith("/lnb/")) {
