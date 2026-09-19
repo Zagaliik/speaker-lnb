@@ -479,6 +479,7 @@ def saison_auto(api, log=print):
 
 
 def scrape(year, divisions, avec_images=True, log=print):
+    log("Relais Cloudflare : " + (PROXY if PROXY else "aucun (appels directs a la LNB)"))
     api = Lnb()
     log("Statistiques de la saison precedente...")
     stats_prev, prev_year = stats_saison_precedente(api, year, divisions, log)

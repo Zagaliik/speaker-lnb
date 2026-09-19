@@ -22,6 +22,9 @@ jobs:
         run: pip install --quiet pillow
 
       - name: Recuperer les effectifs et statistiques
+        # La LNB refuse les adresses GitHub : sans ce relais, chaque requete tombe en 403.
+        env:
+          LNB_PROXY: ${{ vars.LNB_PROXY }}
         run: python scraper/scrape_lnb.py ${{ vars.LNB_SEASON || 'auto' }} lnb-data.json
 
       - name: Verifier que le fichier est exploitable
