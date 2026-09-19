@@ -15,7 +15,9 @@ API decouverte sur lnb.fr (backend IP-Web / altrstat) :
   POST altrstats/getCoachingStaff  (form-encoded: teamExternalId=) -> staff technique
 
 Usage :
-  python3 scrape_lnb.py [annee] [sortie.json] [--sans-images]
+  python3 scrape_lnb.py [annee|auto] [sortie.json] [--sans-images]
+
+Sans argument, la saison est detectee automatiquement aupres de la LNB.
 """
 import base64, io, json, os, shutil, subprocess, sys, tempfile, time
 import urllib.error, urllib.parse, urllib.request
@@ -423,6 +425,33 @@ def calendrier(api, abbrev, division, year):
     return matchs
 
 
+
+def saison_auto(api, log=print):
+    """Determine la saison courante en interrogeant la LNB plutot qu'en la devinant.
+
+    L'API plafonne a la derniere saison publiee : demander une annee future renvoie
+    la saison en cours, et le champ "year" de la reponse dit laquelle. On demande
+    donc toujours l'annee suivante et on lit ce qu'on nous repond. Aucune regle de
+    date a maintenir, aucun mois charniere a choisir.
+    """
+    futur = datetime.now().year + 1
+    try:
+        comps = api.competitions(futur)
+    except Exception as e:
+        log(f"  ! detection de saison impossible ({e})")
+        return str(futur - 1)
+    annee = None
+    for c in comps:
+        if c.get("year"):
+            annee = str(c["year"])
+            break
+    if not annee:
+        log("  ! l'API n'annonce aucune saison, repli sur l'annee precedente")
+        return str(futur - 1)
+    log(f"  saison detectee : {annee}/{int(annee) + 1}")
+    return annee
+
+
 def scrape(year, divisions, avec_images=True, log=print):
     api = Lnb()
     log("Statistiques de la saison precedente...")
@@ -556,8 +585,12 @@ def fusionner(neuf, ancien_path, log=print):
 if __name__ == "__main__":
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     avec_images = "--sans-images" not in sys.argv
-    year = args[0] if args else "2026"
+    year = args[0] if args else "auto"
     dest = args[1] if len(args) > 1 else "lnb-data.json"
+
+    # "auto" (le defaut) demande la saison a la LNB ; une annee explicite la force.
+    if str(year).lower() == "auto":
+        year = saison_auto(Lnb())
 
     data = scrape(year, {1, 2, 3, 4}, avec_images)
     if os.path.exists(dest):

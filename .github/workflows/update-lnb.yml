@@ -22,7 +22,7 @@ jobs:
         run: pip install --quiet pillow
 
       - name: Recuperer les effectifs et statistiques
-        run: python scraper/scrape_lnb.py ${{ vars.LNB_SEASON || '2026' }} lnb-data.json
+        run: python scraper/scrape_lnb.py ${{ vars.LNB_SEASON || 'auto' }} lnb-data.json
 
       - name: Verifier que le fichier est exploitable
         run: |

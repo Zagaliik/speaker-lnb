@@ -94,14 +94,21 @@ python3 scraper/scrape_lnb.py 2026 lnb-data.json --sans-images
 
 ## Changer de saison
 
-Le script prend l'année de début de saison en argument :
+**Rien à faire.** Le script demande la saison courante à la LNB plutôt que de la
+déduire du calendrier : il interroge l'année suivante, et l'API — qui plafonne
+toujours à la dernière saison publiée — répond en annonçant laquelle. Le jour où
+la saison 2027/28 paraît, la bascule est automatique.
+
+Une soupape existe si la LNB publiait la saison suivante trop tôt, en pleine phase
+finale par exemple. Dans *Settings* → *Secrets and variables* → *Actions* →
+*Variables*, crée `LNB_SEASON` avec l'année de début voulue (`2026`). Le script
+s'y tiendra jusqu'à ce que tu supprimes la variable.
+
+En ligne de commande, l'année reste forçable :
 
 ```bash
 python3 scraper/scrape_lnb.py 2027 lnb-data.json
 ```
-
-Pour l'automatisation, définir la variable `LNB_SEASON` dans
-*Settings* → *Secrets and variables* → *Actions* → *Variables*.
 
 ## D'où viennent les données
 
