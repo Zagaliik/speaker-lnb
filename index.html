@@ -1125,27 +1125,6 @@ function renderTeam(mount, side, sideLabel){
     return;
   }
 
-  if(t.staff && t.staff.length){
-    var st = el("div", "staff");
-    st.appendChild(el("h3", null, "Staff technique"));
-    var sul = el("ul");
-    t.staff.forEach(function(m){
-      var li = el("li");
-      li.appendChild(el("span", "role", m.role || ""));
-      li.appendChild(el("span", "nmx", m.prenom + " " + (m.nom || "").toUpperCase()));
-      if(m.ajoute){
-        var x = el("button", "btn sm ghost danger", "✕");
-        x.addEventListener("click", function(){
-          S.extraStaff[t.key] = (S.extraStaff[t.key] || []).filter(function(v){ return v.id !== m.id; });
-          save(); renderCompo(); renderScript();
-        });
-        li.appendChild(x);
-      }
-      sul.appendChild(li);
-    });
-    st.appendChild(sul);
-    box.appendChild(st);
-  }
   var rh = el("div", "rosterhead");
   rh.appendChild(el("span", null, t.joueurs.length + " joueurs"));
   var cl2 = (side.compId === "custom") ? null : ligneClassement(competition(side.compId), t.id);
@@ -1175,6 +1154,28 @@ function renderTeam(mount, side, sideLabel){
   var absents = byNumber(t.joueurs.filter(function(j){ return S.out[j.id]; }));
   presents.concat(absents).forEach(function(j){ ul.appendChild(playerRow(j, t)); });
   box.appendChild(ul);
+
+  if(t.staff && t.staff.length){
+    var st = el("div", "staff");
+    st.appendChild(el("h3", null, "Staff technique"));
+    var sul = el("ul");
+    t.staff.forEach(function(m){
+      var li = el("li");
+      li.appendChild(el("span", "role", m.role || ""));
+      li.appendChild(el("span", "nmx", m.prenom + " " + (m.nom || "").toUpperCase()));
+      if(m.ajoute){
+        var x = el("button", "btn sm ghost danger", "✕");
+        x.addEventListener("click", function(){
+          S.extraStaff[t.key] = (S.extraStaff[t.key] || []).filter(function(v){ return v.id !== m.id; });
+          save(); renderCompo(); renderScript();
+        });
+        li.appendChild(x);
+      }
+      sul.appendChild(li);
+    });
+    st.appendChild(sul);
+    box.appendChild(st);
+  }
 
   var az = el("div", "addzone");
   var bj = el("button", "btn sm", "＋ Ajouter un joueur");
