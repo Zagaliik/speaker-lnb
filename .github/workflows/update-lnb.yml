@@ -42,6 +42,9 @@ jobs:
           vides = [e["nom"] for e in equipes if not e["joueurs"]]
           if vides:
               sys.exit(f"Effectifs vides, l'API a flanche : {', '.join(vides)} — mise a jour annulee.")
+          staff = sum(len(e.get("staff") or []) for e in equipes)
+          if staff < 100:
+              sys.exit(f"Staff effondre ({staff} membres) — mise a jour annulee.")
           sans_logo = [e["nom"] for e in equipes if not e.get("logo")]
           if len(sans_logo) > 5:
               sys.exit(f"{len(sans_logo)} equipes sans logo — mise a jour annulee.")

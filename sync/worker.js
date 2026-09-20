@@ -22,7 +22,7 @@
  *
  *   GET  /lnb/standings?cid=317
  *   GET  /lnb/calendar?abbrev=PROA&div=1&year=2026
- *   POST /lnb/api        <- { path, body }   relais generique, chemins LNB seulement
+ *   POST /lnb/api        <- { path, body, form? }  relais generique, chemins LNB seulement
  *   GET  /lnb/img?u=...                      relais d'image, assets.altrstat.xyz seulement
  *
  * Ces deux dernieres routes existent parce que la LNB refuse les adresses des
@@ -46,18 +46,31 @@ async function jeton() {
   return (await r.json()).token;
 }
 
-async function appelLnb(chemin, corps) {
+async function appelLnb(chemin, corps, form) {
   const t = await jeton();
+  // getCoachingStaff est le seul point d'entree qui refuse le JSON : il lui faut
+  // un corps form-encode. Le transformer en parametre d'URL renvoie une liste vide.
+  let type = null;
+  let charge;
+  if (corps != null) {
+    if (form) {
+      type = "application/x-www-form-urlencoded";
+      charge = new URLSearchParams(corps).toString();
+    } else {
+      type = "application/json";
+      charge = JSON.stringify(corps);
+    }
+  }
   const r = await fetch(API + chemin, {
-    method: corps ? "POST" : "GET",
+    method: corps != null ? "POST" : "GET",
     headers: {
       Authorization: "Bearer " + t,
       device_type: "web",
       Origin: "https://lnb.fr",
       Referer: "https://lnb.fr/",
-      ...(corps ? { "Content-Type": "application/json" } : {}),
+      ...(type ? { "Content-Type": type } : {}),
     },
-    body: corps ? JSON.stringify(corps) : undefined,
+    body: charge,
   });
   if (!r.ok) throw new Error("LNB " + r.status);
   return r.json();
@@ -136,7 +149,7 @@ export default {
       const chemin = String(corps.path || "");
       if (!CHEMINS_LNB.test(chemin)) return reponse({ erreur: "chemin_refuse" }, 403);
       try {
-        return reponse(await appelLnb(chemin, corps.body));
+        return reponse(await appelLnb(chemin, corps.body, corps.form === true));
       } catch (e) {
         return reponse({ erreur: "lnb_injoignable", detail: String(e.message || e) }, 502);
       }

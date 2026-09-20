@@ -243,17 +243,14 @@ class Lnb:
             time.sleep(1.5 * (attempt + 1))
 
     def _via_relais(self, path, body, form, retries):
-        """Le Worker se charge du jeton et des en-tetes ; on ne transmet que le chemin
-        et le corps. Le staff attend un corps form-encode : on le serialise ici, le
-        relais le passe tel quel."""
-        if form and body is not None:
-            path = path + ("&" if "?" in path else "?") + urllib.parse.urlencode(body)
-            body = None
+        """Le Worker se charge du jeton et des en-tetes ; on ne transmet que le chemin,
+        le corps, et la maniere de l'encoder. Le staff exige du form-encode : le passer
+        en parametre d'URL renvoie une liste vide, sans erreur."""
         for attempt in range(retries):
             try:
                 req = urllib.request.Request(
                     PROXY + "/lnb/api",
-                    data=json.dumps({"path": path, "body": body}).encode(),
+                    data=json.dumps({"path": path, "body": body, "form": bool(form)}).encode(),
                     headers={"Content-Type": "application/json", "User-Agent": UA})
                 return json.load(urllib.request.urlopen(req, timeout=60))
             except Exception:
@@ -588,8 +585,15 @@ def fusionner(neuf, ancien_path, log=print):
         for e in c.get("equipes", []):
             idx[(c["id"], e["id"])] = e
     repris = 0
+    staffs_repris = 0
     for c in neuf["competitions"]:
         for e in c["equipes"]:
+            # Le staff se perd independamment de l'effectif : on le reprend aussi.
+            if not e.get("staff"):
+                anc_s = idx.get((c["id"], e["id"]))
+                if anc_s and anc_s.get("staff"):
+                    e["staff"] = anc_s["staff"]
+                    staffs_repris += len(anc_s["staff"])
             if e["joueurs"]:
                 continue
             anc = idx.get((c["id"], e["id"]))
@@ -606,6 +610,8 @@ def fusionner(neuf, ancien_path, log=print):
             log(f"  effectif repris du fichier precedent : {e['nom']} ({len(anc['joueurs'])} joueurs)")
     if repris:
         log(f"  {repris} joueurs conserves malgre un effectif vide cote API")
+    if staffs_repris:
+        log(f"  {staffs_repris} membres du staff conserves du fichier precedent")
     return neuf
 
 
