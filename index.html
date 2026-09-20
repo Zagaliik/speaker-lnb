@@ -149,6 +149,11 @@ ul.roster li:last-child{border-bottom:none}
 .mk.five[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .mk.out[aria-pressed="true"]{background:var(--danger-soft);color:var(--danger);border-color:var(--danger)}
 .mk.del{font-size:12px}
+.mk.cap{font-size:15px}
+.mk.cap[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.capstar{color:var(--accent);font-size:.8em;vertical-align:.15em;margin-left:.25em}
+li.is-out{order:2}
+.staff .capstar{font-size:1em;vertical-align:0}
 li.is-out .pl{opacity:.42}
 li.is-five{background:var(--accent-soft)}
 
@@ -480,7 +485,7 @@ var S = {
   home:{compId:null, teamId:null},
   away:{compId:null, teamId:null},
   date:"",
-  five:{}, out:{}, phon:{}, num:{},
+  five:{}, out:{}, phon:{}, num:{}, capitaine:{},
   extra:{}, extraStaff:{},
   customTeams:[],
   arbitres:[], table:[],            // annuaires : identite seulement
@@ -1120,6 +1125,27 @@ function renderTeam(mount, side, sideLabel){
     return;
   }
 
+  if(t.staff && t.staff.length){
+    var st = el("div", "staff");
+    st.appendChild(el("h3", null, "Staff technique"));
+    var sul = el("ul");
+    t.staff.forEach(function(m){
+      var li = el("li");
+      li.appendChild(el("span", "role", m.role || ""));
+      li.appendChild(el("span", "nmx", m.prenom + " " + (m.nom || "").toUpperCase()));
+      if(m.ajoute){
+        var x = el("button", "btn sm ghost danger", "✕");
+        x.addEventListener("click", function(){
+          S.extraStaff[t.key] = (S.extraStaff[t.key] || []).filter(function(v){ return v.id !== m.id; });
+          save(); renderCompo(); renderScript();
+        });
+        li.appendChild(x);
+      }
+      sul.appendChild(li);
+    });
+    st.appendChild(sul);
+    box.appendChild(st);
+  }
   var rh = el("div", "rosterhead");
   rh.appendChild(el("span", null, t.joueurs.length + " joueurs"));
   var cl2 = (side.compId === "custom") ? null : ligneClassement(competition(side.compId), t.id);
@@ -1143,7 +1169,11 @@ function renderTeam(mount, side, sideLabel){
   box.appendChild(rh);
 
   var ul = el("ul", "roster");
-  byNumber(t.joueurs).forEach(function(j){ ul.appendChild(playerRow(j, t)); });
+  // Les absents passent en fin de liste : au milieu du tableau, ils parasitent
+  // la lecture pour rien.
+  var presents = byNumber(t.joueurs.filter(function(j){ return !S.out[j.id]; }));
+  var absents = byNumber(t.joueurs.filter(function(j){ return S.out[j.id]; }));
+  presents.concat(absents).forEach(function(j){ ul.appendChild(playerRow(j, t)); });
   box.appendChild(ul);
 
   var az = el("div", "addzone");
@@ -1174,27 +1204,6 @@ function renderTeam(mount, side, sideLabel){
     form.joueur.classList.remove("open"); form.staff.classList.toggle("open");
   });
 
-  if(t.staff && t.staff.length){
-    var st = el("div", "staff");
-    st.appendChild(el("h3", null, "Staff technique"));
-    var sul = el("ul");
-    t.staff.forEach(function(m){
-      var li = el("li");
-      li.appendChild(el("span", "role", m.role || ""));
-      li.appendChild(el("span", "nmx", m.prenom + " " + (m.nom || "").toUpperCase()));
-      if(m.ajoute){
-        var x = el("button", "btn sm ghost danger", "✕");
-        x.addEventListener("click", function(){
-          S.extraStaff[t.key] = (S.extraStaff[t.key] || []).filter(function(v){ return v.id !== m.id; });
-          save(); renderCompo(); renderScript();
-        });
-        li.appendChild(x);
-      }
-      sul.appendChild(li);
-    });
-    st.appendChild(sul);
-    box.appendChild(st);
-  }
   mount.appendChild(box);
 }
 
@@ -1254,6 +1263,19 @@ function playerRow(j, t){
   row.appendChild(who);
 
   var marks = el("div", "marks");
+
+  var estCap = S.capitaine[t.key] === j.id;
+  var bc = el("button", "mk cap", estCap ? "★" : "☆");
+  bc.setAttribute("aria-pressed", estCap ? "true" : "false");
+  bc.title = "Capitaine de la rencontre";
+  bc.addEventListener("click", function(){
+    // Un seul capitaine par équipe : désigner quelqu'un remplace le précédent.
+    if(S.capitaine[t.key] === j.id) delete S.capitaine[t.key];
+    else S.capitaine[t.key] = j.id;
+    save(); renderCompo(); renderScript();
+  });
+  marks.appendChild(bc);
+
   var b5 = el("button", "mk five", "5");
   b5.setAttribute("aria-pressed", S.five[j.id] ? "true" : "false");
   b5.title = "Titulaire";
@@ -1492,14 +1514,14 @@ function teamSection(m, t, label, step){
   if(subs.length){
     var b2 = block(step.n++, "Remplaçants", subs.length + " joueurs");
     var c2 = el("div", "callout");
-    subs.forEach(function(j){ c2.appendChild(playerCall(j)); });
+    subs.forEach(function(j){ c2.appendChild(playerCall(j, t)); });
     b2.appendChild(c2); m.appendChild(b2);
   }
   var five = fiveOf(t);
   var b3 = block(step.n++, "5 majeur", five.length + "/5");
   var c3 = el("div", "callout");
   if(!five.length) c3.appendChild(el("div", "empty", "Aucun titulaire sélectionné."));
-  else five.forEach(function(j){ c3.appendChild(playerCall(j)); });
+  else five.forEach(function(j){ c3.appendChild(playerCall(j, t)); });
   b3.appendChild(c3); m.appendChild(b3);
 }
 
@@ -1539,6 +1561,11 @@ function line(o){
   var big = el("div", "big");
   big.appendChild(document.createTextNode((p.prenom || "") + " "));
   big.appendChild(el("span", "last", (p.nom || "").toUpperCase()));
+  if(o.capitaine){
+    var et = el("span", "capstar", "★");
+    et.title = "Capitaine";
+    big.appendChild(et);
+  }
   body.appendChild(big);
   if(o.phon) body.appendChild(el("div", "say", "« " + o.phon + " »"));
   var l2 = el("div", "line2");
@@ -1549,13 +1576,14 @@ function line(o){
   return d;
 }
 
-function playerCall(j){
+function playerCall(j, t){
   var sub = [];
   var nat = (flag(j.code_pays) + " " + (j.nationalite || "")).trim();
   if(nat) sub.push(nat);
   if(j.poste_court) sub.push(j.poste_court);
   if(j.taille) sub.push(j.taille + " cm");
-  return line({person:j, num:numOf(j), sub:sub.join(" · "), phon:S.phon[j.id], stat:statLine(j)});
+  return line({person:j, num:numOf(j), sub:sub.join(" · "), phon:S.phon[j.id],
+               stat:statLine(j), capitaine:(t && S.capitaine[t.key] === j.id)});
 }
 
 $("c-stats").addEventListener("click", function(){
@@ -1584,12 +1612,13 @@ $("b-reset").addEventListener("click", function(){
     details:["tes annuaires d'arbitres et d'officiels",
              "toutes tes prononciations",
              "tes équipes créées et les joueurs ajoutés à la main",
+             "le capitaine désigné est effacé avec la composition",
              "les rôles de la table de marque (seules les personnes sont retirées)"]
   }).then(function(ok){
     if(!ok) return;
     S.home = {compId:null, teamId:null};
     S.away = {compId:null, teamId:null};
-    S.five = {}; S.out = {}; S.num = {}; S.date = "";
+    S.five = {}; S.out = {}; S.num = {}; S.capitaine = {}; S.date = "";
     S.roles.arb.forEach(function(sl){ sl.personId = null; });
     S.roles.tab.forEach(function(sl){ sl.personId = null; });
     $("f-date").value = "";
