@@ -1516,6 +1516,10 @@ function renderRun(){
         });
       }],
      ["＋ Depuis la bibliothèque", "ghost", function(){ insererDepuisBiblio(); }],
+     ["Ranger par repère", "ghost", function(){
+        ordonnerTemps(); save(); renderRun();
+        toast("Lignes rangées — les sections et les repères libres n'ont pas bougé.");
+      }],
      ["Tout effacer", "ghost danger", function(){
         confirmer({titre:"Vider le déroulé", danger:true, valider:"Tout effacer",
                    message:"Toutes les lignes seront supprimées. Le modèle du club n'est pas touché."
@@ -1574,7 +1578,7 @@ function ligneRun(l, i, edit){
     rep.addEventListener("change", function(){
       var v = rep.value.trim();
       var mm = v.match(/^M\s*-\s*(\d+)$/i);
-      if(mm){ l.avant = parseInt(mm[1], 10); delete l.marque; }
+      if(mm){ l.avant = parseInt(mm[1], 10); delete l.marque; ordonnerTemps(); }
       else { delete l.avant; l.marque = v; }
       save(); renderRun();
     });
@@ -1712,6 +1716,26 @@ function poignee(i){
   return p;
 }
 
+/** Range chronologiquement les suites de lignes a repere M-. Les sections et les
+    lignes a repere libre (TM, Inter QT) servent de bornes : leur ordre t'appartient,
+    on ne deplace jamais une ligne par-dessus l'une d'elles. */
+function ordonnerTemps(){
+  var out = [], tampon = [];
+  function vider(){
+    if(tampon.length > 1){
+      tampon.sort(function(a, b){ return (b.avant || 0) - (a.avant || 0); });
+    }
+    out = out.concat(tampon);
+    tampon = [];
+  }
+  (S.run.lignes || []).forEach(function(l){
+    if(l.sec !== undefined || l.avant == null){ vider(); out.push(l); }
+    else tampon.push(l);
+  });
+  vider();
+  S.run.lignes = out;
+}
+
 function deplacerLigne(i, d){
   var k = i + d;
   if(k < 0 || k >= S.run.lignes.length) return;
@@ -1724,6 +1748,7 @@ function supprimerLigne(i){ S.run.lignes.splice(i, 1); save(); renderRun(); }
 function ajouterLigne(modele){
   var l = cloneLignes([modele])[0];
   S.run.lignes.push(l);
+  if(l.avant != null) ordonnerTemps();
   save(); renderRun();
   // Ajoutee en fin de liste, elle passerait inapercue sous des dizaines de lignes.
   var box = $("run");
