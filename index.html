@@ -401,7 +401,25 @@ li.is-five{background:var(--accent-soft)}
   text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:9px;
 }
 .runsec .x{margin-left:auto}
-.runrow.edite{grid-template-columns:72px minmax(0,1.3fr) minmax(0,.9fr) minmax(0,.7fr) 108px minmax(0,1.7fr) 34px}
+/* En modification la ligne porte poignee, repere, action, musique, salle, categorie
+   et les commandes : sept colonnes. Le commentaire, long par nature, prend sa propre
+   ligne en pleine largeur plutot que d'etre comprime dans une colonne. */
+.runrow.edite{
+  grid-template-columns:30px 82px minmax(0,1.3fr) minmax(0,1fr) minmax(0,.8fr) 120px 56px;
+  row-gap:8px;align-items:center;
+}
+.runrow.edite > textarea{grid-column:1 / -1;min-height:54px}
+/* L'en-tete suit la grille affichee, sinon les titres annoncent les mauvaises colonnes. */
+.runhead.edite{
+  grid-template-columns:30px 82px minmax(0,1.3fr) minmax(0,1fr) minmax(0,.8fr) 120px 56px;
+}
+.runrow.edite .ord{display:grid;grid-template-columns:1fr 1fr;gap:3px;width:54px;justify-self:end}
+.runrow.edite .ord button{width:25px;height:22px;font-size:10px}
+@media (max-width:900px){
+  .runrow.edite{grid-template-columns:30px 1fr 56px;row-gap:6px}
+  .runrow.edite > input,.runrow.edite > select{grid-column:2}
+  .runrow.edite > textarea{grid-column:1 / -1}
+}
 .runrow select{width:100%;padding:6px 8px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;font-size:12.5px}
 .runrow input,.runrow textarea{
   width:100%;padding:6px 8px;background:var(--surface-2);border:1px solid var(--line);
@@ -555,10 +573,7 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
     </div>
     <div class="cond runwrap" style="margin-top:16px">
       <div class="legende" id="legende"></div>
-      <div class="runhead">
-        <span class="c1">Heure</span><span class="c2">Action</span>
-        <span class="c3">Musique</span><span class="c4">Salle</span><span class="c5">Commentaire</span>
-      </div>
+      <div class="runhead" id="runhead"></div>
       <div id="run"></div>
       <div class="addzone" id="r-actions"></div>
     </div>
@@ -1445,6 +1460,18 @@ function creerClub(){
   });
 }
 
+/** Les colonnes different entre lecture et modification : l'en-tete doit suivre. */
+function majEntetes(){
+  var h = $("runhead");
+  if(!h) return;
+  h.className = "runhead" + (S.runEdit ? " edite" : "");
+  h.innerHTML = "";
+  var titres = S.runEdit
+    ? ["", "Repère", "Action", "Musique", "Salle", "Catégorie", ""]
+    : ["Heure", "Action", "Musique", "Salle", "Commentaire", ""];
+  titres.forEach(function(t){ h.appendChild(el("span", null, t)); });
+}
+
 function renderLegende(){
   var lg = $("legende");
   if(!lg) return;
@@ -1462,6 +1489,7 @@ function renderLegende(){
 function renderRun(){
   remplirClubs($("r-club"));
   renderLegende();
+  majEntetes();
   var m = $("run");
   if(!m) return;
   m.innerHTML = "";
@@ -1541,6 +1569,7 @@ function ligneRun(l, i, edit){
     var rep = document.createElement("input");
     rep.type = "text";
     rep.value = l.avant != null ? "M-" + l.avant : (l.marque || "");
+    rep.placeholder = "M-20 / TM";
     rep.title = "« M-20 » calcule l'heure. Tout autre texte reste tel quel (TM, Inter QT…).";
     rep.addEventListener("change", function(){
       var v = rep.value.trim();
@@ -1567,14 +1596,6 @@ function ligneRun(l, i, edit){
     sq.addEventListener("change", function(){ l.cat = sq.value; save(); renderRun(); });
     d.appendChild(sq);
 
-    var ta = document.createElement("textarea");
-    ta.value = l.com || ""; ta.placeholder = "Commentaire";
-    ta.addEventListener("change", function(){
-      if(ta.value.trim()) l.com = ta.value.trim(); else delete l.com;
-      save();
-    });
-    d.appendChild(ta);
-
     var col = el("div", "ord");
     [["▲", function(){ deplacerLigne(i, -1); }],
      ["▼", function(){ deplacerLigne(i, 1); }],
@@ -1582,10 +1603,19 @@ function ligneRun(l, i, edit){
      ["✕", function(){ supprimerLigne(i); }]].forEach(function(b){
       var bt = el("button", null, b[0]);
       if(b[0] === "☆") bt.title = "Enregistrer dans la bibliothèque du club";
+      if(b[0] === "✕") bt.title = "Supprimer la ligne";
       bt.addEventListener("click", b[1]);
       col.appendChild(bt);
     });
     d.appendChild(col);
+
+    var ta = document.createElement("textarea");
+    ta.value = l.com || ""; ta.placeholder = "Commentaire — texte à dire, consignes…";
+    ta.addEventListener("change", function(){
+      if(ta.value.trim()) l.com = ta.value.trim(); else delete l.com;
+      save();
+    });
+    d.appendChild(ta);
     return d;
   }
 
