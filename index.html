@@ -1459,9 +1459,19 @@ function remplirClubs(sel){
 
 /** Le conducteur appartient a une rencontre, donc a un club : changer de club
     charge son deroule. Sans cela le selecteur affiche un club et la liste un autre. */
+/** Signature du contenu d'un deroule, pour reperer un travail non enregistre. */
+function signature(lignes){
+  return (lignes || []).map(function(l){
+    return [l.sec, l.avant, l.marque, l.action, l.musique, l.salle, l.com, l.cat].join("\u0001");
+  }).join("\u0002");
+}
+
 function changerClub(id){
   if(id === S.clubActif){ renderRun(); renderBiblio(); return; }
-  var enCours = (S.run.lignes || []).some(function(l){ return l.fait || l.note; });
+  // Un deroule prepare mais pas encore enregistre comme modele serait perdu
+  // sans un mot : on ne se fie pas aux seules cases cochees.
+  var enCours = (S.run.lignes || []).length > 0
+             && signature(S.run.lignes) !== signature(modeleActif());
   function basculer(){
     S.clubActif = id;
     S.run.lignes = cloneLignes(modeleActif());
@@ -1473,8 +1483,9 @@ function changerClub(id){
   }
   if(!enCours){ basculer(); return; }
   confirmer({titre:"Changer de club", danger:true, valider:"Changer de club",
-    message:"Le déroulé en cours contient des notes ou des étapes cochées. "
-            + "Charger le club suivant les effacera."
+    message:"Le déroulé en cours n'est pas enregistré comme modèle. "
+            + "Charger un autre club le remplacera.",
+    details:["Pour le garder : Annuler, puis Club & modèle → Enregistrer comme modèle"]
   }).then(function(ok){
     if(ok) basculer(); else { renderRun(); renderBiblio(); }
   });
