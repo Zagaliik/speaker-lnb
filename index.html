@@ -1489,6 +1489,9 @@ function renderLegende(){
 }
 
 function renderRun(){
+  // Ranger a l'affichage et pas seulement a la saisie : sans cela les lignes
+  // creees avant cette regle restent dans le desordre indefiniment.
+  if(ordonnerTemps()) save();
   remplirClubs($("r-club"));
   renderLegende();
   majEntetes();
@@ -1722,6 +1725,7 @@ function poignee(i){
     lignes a repere libre (TM, Inter QT) servent de bornes : leur ordre t'appartient,
     on ne deplace jamais une ligne par-dessus l'une d'elles. */
 function ordonnerTemps(){
+  var avant = (S.run.lignes || []).map(function(l){ return l.id; }).join(",");
   var out = [], tampon = [];
   function vider(){
     if(tampon.length > 1){
@@ -1736,6 +1740,7 @@ function ordonnerTemps(){
   });
   vider();
   S.run.lignes = out;
+  return out.map(function(l){ return l.id; }).join(",") !== avant;
 }
 
 function deplacerLigne(i, d){
