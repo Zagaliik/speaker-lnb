@@ -534,6 +534,10 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
       </div>
       <div class="field">
         <label>&nbsp;</label>
+        <button class="btn" id="b-save">Enregistrer la rencontre</button>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
         <button class="btn danger" id="b-reset">Nouvelle rencontre</button>
       </div>
     </div>
@@ -648,6 +652,13 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
   </section>
 
   <section class="panel" id="p-data" role="tabpanel" hidden>
+    <div class="card" style="margin-bottom:16px">
+      <header><h2>Rencontres enregistrées</h2><span class="n" id="n-arch"></span></header>
+      <div class="note">Chaque rencontre enregistrée garde sa composition, son conducteur,
+        ses officiels et ses notes. « Nouvelle rencontre » en archive une copie automatiquement
+        avant d'effacer.</div>
+      <ul class="people" id="l-arch"></ul>
+    </div>
     <div class="card">
       <header><h2>Données LNB</h2></header>
       <div class="rows">
@@ -720,7 +731,7 @@ var S = {
   extra:{}, extraStaff:{},
   customTeams:[],
   run:{heure:"20:00", lignes:[]},   // deroule de la rencontre en cours
-  notes:[],                         // bloc-notes horodate du match
+  notes:[], archives:[],            // bloc-notes et rencontres conservees
   cats:[], clubs:[], clubActif:null, // categories editables, un modele et une biblio par club
   modele:[], biblio:[], runEdit:false,
   arbitres:[], table:[],            // annuaires : identite seulement
@@ -2152,6 +2163,7 @@ document.querySelectorAll("nav.tabs button").forEach(function(b){
     if(b.dataset.tab === "cond") renderRun();
     if(b.dataset.tab === "biblio") renderBiblio();
     if(b.dataset.tab === "notes") renderNotes();
+    if(b.dataset.tab === "data") renderArchives();
   });
 });
 function gotoTab(name){
@@ -2161,7 +2173,7 @@ function gotoTab(name){
 }
 
 /* ============ composition ============ */
-function renderAll(){ renderCompo(); renderScript(); renderRun(); renderBiblio(); renderNotes(); renderOff(); renderData(); }
+function renderAll(){ renderCompo(); renderScript(); renderRun(); renderBiblio(); renderNotes(); renderOff(); renderArchives(); renderData(); }
 function renderCompo(){
   renderTeam($("t-home"), S.home, "Recevants");
   renderTeam($("t-away"), S.away, "Visiteurs");
@@ -2516,7 +2528,125 @@ function createTeam(side){
 }
 
 $("b-newteam").addEventListener("click", function(){ createTeam(S.home); });
+$("b-save").addEventListener("click", function(){ archiver(false); });
 $("f-date").addEventListener("change", function(e){ S.date = e.target.value; save(); renderScript(); });
+
+/* ============ archivage des rencontres ============ */
+/* Un clic malheureux sur "Nouvelle rencontre" ne doit rien coûter, et relire ce
+   qu'on a fait la fois precedente vaut largement la place occupee. */
+var MAX_ARCHIVES = 40;
+
+function instantane(){
+  var champs = ["home", "away", "date", "five", "out", "num", "capitaine", "roles", "run", "notes"];
+  var o = {};
+  champs.forEach(function(k){
+    try{ o[k] = JSON.parse(JSON.stringify(S[k])); }catch(e){}
+  });
+  return o;
+}
+
+function titreRencontre(){
+  var h = resolveTeam(S.home), a = resolveTeam(S.away);
+  if(h && a) return h.nom + " – " + a.nom;
+  if(h || a) return (h || a).nom;
+  var cl = clubActif();
+  return cl ? cl.nom : "Rencontre";
+}
+
+function archiver(silencieux){
+  var vide = !S.home.teamId && !S.away.teamId
+          && !(S.run.lignes || []).length && !(S.notes || []).length;
+  if(vide){
+    if(!silencieux) toast("Rien à enregistrer pour l'instant.");
+    return null;
+  }
+  var d = new Date();
+  var a = {
+    id: uid("a"),
+    titre: titreRencontre(),
+    dateMatch: S.date || "",
+    quand: d.toISOString(),
+    club: (clubActif() || {}).nom || "",
+    snap: instantane()
+  };
+  S.archives.unshift(a);
+  if(S.archives.length > MAX_ARCHIVES) S.archives = S.archives.slice(0, MAX_ARCHIVES);
+  save(); renderArchives();
+  if(!silencieux) toast("« " + a.titre + " » enregistrée.");
+  return a;
+}
+
+function restaurer(a){
+  confirmer({titre:"Rouvrir cette rencontre", valider:"Rouvrir",
+    message:"« " + a.titre + " » remplacera la rencontre en cours.",
+    details:["La rencontre actuelle sera d'abord enregistrée, rien ne se perd"]
+  }).then(function(ok){
+    if(!ok) return;
+    archiver(true);
+    for(var k in a.snap){
+      if(a.snap[k] !== undefined && S[k] !== undefined){
+        try{ S[k] = JSON.parse(JSON.stringify(a.snap[k])); }catch(e){}
+      }
+    }
+    if(!S.run || !S.run.lignes) S.run = {heure:"20:00", lignes:[]};
+    $("f-date").value = S.date || "";
+    $("r-heure").value = S.run.heure || "20:00";
+    save(); renderAll(); gotoTab("compo");
+    toast("« " + a.titre + " » rouverte.");
+  });
+}
+
+function renderArchives(){
+  var ul = $("l-arch");
+  if(!ul) return;
+  ul.innerHTML = "";
+  var n = (S.archives || []).length;
+  $("n-arch").textContent = n ? n + " rencontre" + (n > 1 ? "s" : "") : "";
+  if(!n){
+    var li0 = el("li", null, "Aucune rencontre enregistrée pour l'instant.");
+    li0.style.setProperty("color", "var(--muted)");
+    li0.style.setProperty("font-size", "13px");
+    ul.appendChild(li0);
+    return;
+  }
+  S.archives.forEach(function(a){
+    var li = el("li");
+    var who = el("div", "who");
+    who.style.setProperty("flex", "1");
+    who.style.setProperty("min-width", "0");
+    who.appendChild(el("b", null, a.titre));
+    var q = new Date(a.quand);
+    var det = [];
+    if(a.club) det.push(a.club);
+    if(a.dateMatch){
+      var dm = new Date(a.dateMatch + "T12:00:00");
+      if(!isNaN(dm)) det.push("match du " + dm.toLocaleDateString("fr-FR", {day:"numeric", month:"long"}));
+    }
+    det.push("enregistrée le " + (isNaN(q) ? "?" :
+      q.toLocaleString("fr-FR", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"})));
+    var lignes = ((a.snap && a.snap.run && a.snap.run.lignes) || []).length;
+    var notes = ((a.snap && a.snap.notes) || []).length;
+    det.push(lignes + " lignes" + (notes ? " · " + notes + " notes" : ""));
+    who.appendChild(el("div", "r", det.join("  ·  ")));
+    li.appendChild(who);
+
+    var ro = el("button", "btn sm", "Rouvrir");
+    ro.addEventListener("click", function(){ restaurer(a); });
+    li.appendChild(ro);
+
+    var x = el("button", "btn sm ghost danger", "Supprimer");
+    x.addEventListener("click", function(){
+      confirmer({titre:"Supprimer l'enregistrement", danger:true, valider:"Supprimer",
+                 message:"« " + a.titre + " » sera définitivement effacée."}).then(function(ok){
+        if(!ok) return;
+        S.archives = S.archives.filter(function(y){ return y.id !== a.id; });
+        save(); renderArchives();
+      });
+    });
+    li.appendChild(x);
+    ul.appendChild(li);
+  });
+}
 
 /* ============ notes du match ============ */
 /* Horodatees a la seconde ou on les pose : en relisant apres coup, savoir quand
@@ -2822,7 +2952,7 @@ $("c-theme").addEventListener("click", function(){
 $("b-reset").addEventListener("click", function(){
   confirmer({
     titre:"Nouvelle rencontre", valider:"Repartir à zéro", danger:true,
-    message:"La composition en cours est effacée. Ce qui est conservé :",
+    message:"La rencontre en cours est d'abord enregistrée, puis effacée. Ce qui est conservé :",
     details:["tes annuaires d'arbitres et d'officiels",
              "toutes tes prononciations",
              "tes équipes créées et les joueurs ajoutés à la main",
@@ -2830,9 +2960,11 @@ $("b-reset").addEventListener("click", function(){
              "le conducteur repart du modèle de saison",
              "les notes du match sont effacées",
              "ta bibliothèque de jeux et d'animations est conservée",
+             "la rencontre reste consultable dans Données → Rencontres enregistrées",
              "les rôles de la table de marque (seules les personnes sont retirées)"]
   }).then(function(ok){
     if(!ok) return;
+    archiver(true);   // filet : meme un clic malheureux ne coute rien
     S.home = {compId:null, teamId:null};
     S.away = {compId:null, teamId:null};
     S.five = {}; S.out = {}; S.num = {}; S.capitaine = {}; S.date = ""; S.notes = [];
