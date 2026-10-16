@@ -1468,7 +1468,7 @@ function majEntetes(){
   h.innerHTML = "";
   var titres = S.runEdit
     ? ["", "Repère", "Action", "Musique", "Salle", "Catégorie", ""]
-    : ["Heure", "Action", "Musique", "Salle", "Commentaire", ""];
+    : ["Repère", "Action", "Musique", "Salle", "Commentaire", ""];
   titres.forEach(function(t){ h.appendChild(el("span", null, t)); });
 }
 
@@ -1621,8 +1621,10 @@ function ligneRun(l, i, edit){
 
   var h = el("div", "h");
   if(l.avant != null){
-    h.appendChild(document.createTextNode(heureDe(l.avant)));
-    h.appendChild(el("small", null, l.avant === 0 ? "entre-deux" : "M-" + l.avant));
+    // Le repere prime a l'oeil : c'est lui qui rythme le conducteur, l'heure
+    // d'horloge ne servant qu'a se situer.
+    h.appendChild(document.createTextNode(l.avant === 0 ? "Entre-deux" : "M-" + l.avant));
+    h.appendChild(el("small", null, heureDe(l.avant)));
   } else {
     h.appendChild(document.createTextNode(l.marque || ""));
   }
