@@ -1347,12 +1347,28 @@ function cloneLignes(src){
   });
 }
 
+/** Une bibliotheque vide rend le conducteur inutilisable : on la peuple avec les
+    elements du deroule, dedoublonnes, pour qu'il y ait de quoi piocher des le depart. */
+function biblioDepuis(lignes){
+  var vus = {}, out = [];
+  (lignes || []).forEach(function(l){
+    if(l.sec !== undefined || !l.action) return;
+    var cle = sansAccent(l.action) + "|" + sansAccent(l.com || "").slice(0, 40);
+    if(vus[cle]) return;
+    vus[cle] = 1;
+    var b = {id: uid("b"), titre: l.action, action: l.action, cat: catDe(l)};
+    ["musique", "salle", "com"].forEach(function(k){ if(l[k]) b[k] = l[k]; });
+    out.push(b);
+  });
+  return out;
+}
+
 function initRun(){
   if(!S.cats || !S.cats.length) S.cats = JSON.parse(JSON.stringify(CATS_DEFAUT));
   if(!S.clubs || !S.clubs.length){
-    S.clubs = [{id: uid("c"), nom: "Mon club",
-                modele: cloneLignes((S.modele && S.modele.length) ? S.modele : MODELE_DEFAUT),
-                biblio: S.biblio || []}];
+    var mod = cloneLignes((S.modele && S.modele.length) ? S.modele : MODELE_DEFAUT);
+    S.clubs = [{id: uid("c"), nom: "Mon club", modele: mod,
+                biblio: (S.biblio && S.biblio.length) ? S.biblio : biblioDepuis(mod)}];
   }
   if(!S.clubActif || !clubActif()) S.clubActif = S.clubs[0].id;
   if(!S.run || typeof S.run !== "object") S.run = {heure:"20:00", lignes:[]};
@@ -1428,8 +1444,9 @@ function renderRun(){
   });
   if(!S.run.lignes.length){
     m.appendChild(el("div", "empty",
-      edit ? "Déroulé vide. Ajoute des lignes, ou pioche dans la bibliothèque."
-           : "Déroulé vide — passe en modification pour le construire."));
+      edit ? "Déroulé vide. Clique « ＋ Depuis la bibliothèque » pour y déposer tes éléments, "
+             + "puis glisse-les dans l'ordre avec la poignée ⠿."
+           : "Déroulé vide — clique « Modifier le déroulé » pour le construire."));
   }
 
   var z = $("r-actions");
