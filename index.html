@@ -299,6 +299,59 @@ li.is-five{background:var(--accent-soft)}
 .call .say{color:var(--accent);font-style:italic;font-size:13px}
 .empty{padding:24px 18px;text-align:center;color:var(--muted);font-size:14px}
 
+/* ---------- conducteur de match ---------- */
+.runhead,.runrow{
+  display:grid;gap:10px;align-items:start;
+  grid-template-columns:72px minmax(0,1.5fr) minmax(0,1fr) minmax(0,.8fr) minmax(0,2fr) 34px;
+}
+.runhead{
+  padding:7px 14px;background:var(--surface-2);border-bottom:1px solid var(--line);
+  font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+}
+.runrow{padding:9px 14px;border-bottom:1px solid var(--line);font-size:13.5px}
+.runrow:last-child{border-bottom:none}
+.runrow.fait{opacity:.42}
+.runrow .h{font-family:var(--display);font-weight:700;font-size:17px;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.3}
+.runrow .h small{display:block;font-family:var(--body);font-size:10.5px;font-weight:500;color:var(--muted);letter-spacing:.02em}
+.runrow .a{font-weight:600}
+.runrow .m,.runrow .sl{color:var(--ink-2);font-size:12.5px}
+.runrow .cm{color:var(--muted);font-size:12.5px;white-space:pre-wrap;line-height:1.45}
+.runrow .ck{
+  width:26px;height:26px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);
+  color:var(--muted);font-size:13px;display:grid;place-items:center;justify-self:end;
+}
+.runrow .ck[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff}
+.runsec{
+  padding:9px 14px;background:var(--team,var(--surface-2));border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);font-family:var(--display);font-size:17px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:9px;
+}
+.runsec .x{margin-left:auto}
+.runrow input,.runrow textarea{
+  width:100%;padding:6px 8px;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:6px;font-size:13px;font-family:inherit;
+}
+.runrow textarea{min-height:58px;resize:vertical;line-height:1.4}
+.runrow .ord{display:flex;flex-direction:column;gap:2px;justify-self:end}
+.runrow .ord button{width:26px;height:16px;border:1px solid var(--line);border-radius:4px;background:var(--surface-2);font-size:9px;color:var(--muted);display:grid;place-items:center}
+@media (max-width:900px){
+  .runhead{display:none}
+  .runrow{grid-template-columns:62px minmax(0,1fr) 30px;gap:7px}
+  .runrow .m,.runrow .sl,.runrow .cm{grid-column:2}
+}
+ul.blocs{list-style:none;margin:0;padding:0}
+ul.blocs li{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid var(--line)}
+ul.blocs li:last-child{border-bottom:none}
+ul.blocs .b{flex:1;min-width:0}
+ul.blocs .b b{font-size:14px}
+ul.blocs .b .d{font-size:12.5px;color:var(--muted);white-space:pre-wrap;margin-top:2px;line-height:1.45}
+ul.blocs .b .tags{font-size:11px;color:var(--ink-2);margin-top:3px}
+
+@media print{
+  .runsec{break-inside:avoid}
+  .runrow{break-inside:avoid}
+}
+
 /* ---------- officiels ---------- */
 .off-grid{display:grid;gap:16px;grid-template-columns:1fr 1fr;align-items:start}
 @media (max-width:980px){.off-grid{grid-template-columns:1fr}}
@@ -351,6 +404,7 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
     <nav class="tabs" role="tablist">
       <button role="tab" data-tab="compo" aria-selected="true">Composition</button>
       <button role="tab" data-tab="cond" aria-selected="false">Conducteur</button>
+      <button role="tab" data-tab="biblio" aria-selected="false">Bibliothèque</button>
       <button role="tab" data-tab="off" aria-selected="false">Officiels</button>
       <button role="tab" data-tab="data" aria-selected="false">Données</button>
     </nav>
@@ -382,11 +436,10 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
         <div class="offcol"><h3>Table de marque</h3><div class="slotbox" id="m-tab"></div></div>
       </div>
     </div>
-  </section>
 
-  <section class="panel" id="p-cond" role="tabpanel" hidden>
-    <div class="cond">
+    <div class="cond" style="margin-top:16px">
       <div class="cond-bar">
+        <strong style="font-family:var(--display);font-size:19px;text-transform:uppercase;letter-spacing:.02em">Annonce des équipes</strong>
         <button class="btn ghost" id="c-stats">Masquer les stats</button>
         <button class="btn ghost" id="c-photos">Masquer les photos</button>
         <button class="btn ghost" id="c-print">Imprimer</button>
@@ -394,6 +447,48 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
         <span class="runorder">Visiteurs → Arbitres → Table de marque → Recevants</span>
       </div>
       <div class="script" id="script"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-cond" role="tabpanel" hidden>
+    <div class="matchbar">
+      <div class="field">
+        <label for="r-heure">Heure de l'entre-deux</label>
+        <input type="time" id="r-heure" value="20:00">
+      </div>
+      <div class="field spacer">
+        <label>&nbsp;</label>
+        <button class="btn" id="r-edit">Modifier le déroulé</button>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn ghost" id="r-modele">Modèle</button>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn ghost" id="r-print">Imprimer</button>
+      </div>
+    </div>
+    <div class="cond" style="margin-top:16px">
+      <div class="runhead">
+        <span class="c1">Heure</span><span class="c2">Action</span>
+        <span class="c3">Musique</span><span class="c4">Salle</span><span class="c5">Commentaire</span>
+      </div>
+      <div id="run"></div>
+      <div class="addzone" id="r-actions"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-biblio" role="tabpanel" hidden>
+    <div class="card">
+      <header><h2>Bibliothèque</h2><span class="n" id="n-biblio"></span></header>
+      <div class="note">Les jeux, animations et temps-morts que tu réutilises d'un match à l'autre.
+        Depuis le Conducteur, « ＋ Depuis la bibliothèque » les insère en un clic.</div>
+      <div class="addrow">
+        <input class="full search" id="b-search" placeholder="Rechercher…" autocomplete="off">
+        <button class="btn primary full" id="b-add">＋ Ajouter un bloc</button>
+      </div>
+      <div id="l-biblio"></div>
     </div>
   </section>
 
@@ -488,6 +583,8 @@ var S = {
   five:{}, out:{}, phon:{}, num:{}, capitaine:{},
   extra:{}, extraStaff:{},
   customTeams:[],
+  run:{heure:"20:00", lignes:[]},   // deroule de la rencontre en cours
+  modele:[], biblio:[], runEdit:false,
   arbitres:[], table:[],            // annuaires : identite seulement
   roles:{arb:[], tab:[]},           // affectations propres a la rencontre
   showStats:true, showPhotos:true, theme:null
@@ -1022,15 +1119,468 @@ function rafraichirLive(){
   });
 }
 
+/* Deroule type, transcrit de la feuille Excel de Roanne - Aix Maurienne.
+   "avant" = minutes avant l'entre-deux : l'heure se recalcule toute seule.
+   "marque" = repere libre quand l'heure ne s'applique pas (TM, Inter QT). */
+var MODELE_DEFAUT = [
+  {sec:"AVANT-MATCH"},
+  {avant:150, action:"Répétition danseuses + Mascotte", com:"Terrain libre pour la répétition des intervenants"},
+  {avant:120, action:"Ouverture des portes et accueil public", musique:"Playlist échauffement"},
+  {avant:90,  action:"Terrain libre pour les joueurs | Échauffement", musique:"Playlist échauffement",
+              com:"Bienvenue aux premiers supporters, présentation de la boutique et de la buvette"},
+  {avant:60,  action:"Accueil public", musique:"Playlist échauffement",
+              com:"Bienvenue aux supporters | poubelles | événement durant la rencontre"},
+  {avant:50,  action:"Publicité club", musique:"Playlist échauffement", com:"Buvette / Boutique / Papier poubelle"},
+  {avant:40,  action:"Publicité partenaires", musique:"Playlist échauffement"},
+  {avant:30,  action:"Entrée des joueurs sur le terrain", com:"MICKAEL MOOR"},
+  {avant:25,  action:"ENTRÉE MASCOTTE", musique:"MUSIQUE MASCOTTE", com:"Le match démarre pour la mascotte !"},
+  {avant:20,  action:"Publicité partenaires", musique:"Playlist échauffement", com:"VIDÉO LNB"},
+  {avant:10,  action:"Publicité club", musique:"Playlist échauffement",
+              com:"Buvette / Boutique / Papier poubelle — RAVON AUTOMOBILES"},
+  {avant:6,   action:"Présentation d'équipe", musique:"Mix DJ", salle:"ÉTEINTE",
+              com:"Annonce des adversaires ligne de touche, bienvenue à eux, puis tout le monde, arrivée au milieu du terrain, show"},
+  {avant:3,   action:"Présentation des officiels", musique:"Mix DJ", salle:"ÉTEINTE"},
+  {avant:2,   action:"MONTÉE EN MOTIVATION", musique:"LET'S GO — will.i.am", salle:"ALLUMÉE", com:"SHOW SUPPORTERS"},
+  {avant:1,   action:"Lancer fictif", com:"ANNONCE DU PARTENAIRE"},
+
+  {sec:"DÉROULÉ DU SHOW"},
+  {avant:35, action:"WELCOME FAN",
+   com:"La CHORALE DE ROANNE et la Ligue Nationale de Basket vous souhaitent la bienvenue ce soir à LA HALLE ANDRÉ VACHERESSE, et sont très heureux de vous retrouver à l'occasion de ce match."},
+  {avant:15, action:"WELCOME FAN", com:"Reprise de l'annonce de bienvenue"},
+  {avant:14, action:"DISCRIMINATION", musique:"AUDIO + VIDÉO CUBE", salle:"VIDÉO CUBE",
+   com:"PAS D'ANNONCE SPEAKER — juste la vidéo, selon le conducteur"},
+  {avant:13, action:"SUPER COUPE LNB", musique:"AUDIO SUPER COUPE", salle:"QR CODE",
+   com:"Audio à jouer dans la salle + QR Code de la billetterie sur les écrans géants. Final Four entre le Champion de France Betclic ÉLITE, le Champion de France Pro B, le vainqueur de la Leaders Cup et le vainqueur de la Coupe de France."},
+  {avant:11, action:"PRÉSENTATION DES ÉQUIPES", com:"→ voir la composition préparée"},
+  {avant:3,  action:"LET'S GO", musique:"LET'S GO", com:"LET'S GO SPEAKER"},
+  {avant:1,  action:"HYMNE LNB", musique:"HYMNE LNB",
+   com:"REMISE DE BALLON — Roannais Agglomération, Président"},
+
+  {sec:"1ᵉʳ QUART-TEMPS"},
+  {marque:"TM", action:"DANSEURS", musique:"DANSEURS", salle:"DANSEURS"},
+  {marque:"Inter QT", action:"JEU INTERSPORT",
+   com:"Merci à notre partenaire INTERSPORT, Partenaire Officiel de la Chorale Roanne Basket. Vous retrouvez le magasin INTERSPORT à Mably dans la Zone Commerciale de Carrefour."},
+
+  {sec:"2ᵉ QUART-TEMPS"},
+  {marque:"TM", action:"SÉLECTION CUBE LA STAR",
+   com:"Une roue va tourner et s'arrêter sur le numéro d'un siège d'un supporter. Une fois trouvé, il devra se présenter au 2ᵉ quart-temps pour tenter de marquer du milieu de terrain et remporter un sur-maillot Chorale dédicacé de toute l'équipe !"},
+  {marque:"TM", action:"DANSEURS", musique:"DANSEURS"},
+  {marque:"TM", action:"JEU LA STAR",
+   com:"Merci à notre partenaire LA STAR, Partenaire labellisé de la Chorale Roanne Basket."},
+
+  {sec:"MI-TEMPS"},
+  {marque:"M-3", action:"DISCRIMINATION", musique:"AUDIO DISCRIMINATION", salle:"VIDÉO CUBE",
+   com:"PAS D'ANNONCE SPEAKER — juste la vidéo, selon le conducteur"},
+  {marque:"M-1", action:"HYMNE LNB", musique:"HYMNE LNB"},
+
+  {sec:"3ᵉ QUART-TEMPS"},
+  {marque:"TM", action:"DANSEURS", musique:"DANSEURS", salle:"DANSEURS"},
+  {marque:"TM", action:"ANNONCE PARRAIN 3 PTS ET DUNK", musique:"AU CHOIX",
+   com:"Comme vous avez pu le voir, les 3 PTS de notre équipe vous sont présentés par LA COMPAGNIE DES DÉBOUCHEURS."},
+  {marque:"Inter QT", action:"JEU 123 PARE-BRISE",
+   com:"2 joueurs s'affrontent et doivent trouver le logo 123 PARE-BRISE. 123 Pare-Brise prend en charge votre franchise ou vous offre une carte cadeau multi-enseignes de 50 euros à utiliser où vous le voulez dans + de 900 magasins ! Prenez RDV avec le responsable d'agence qui s'occupera de toutes les démarches avec votre assurance. Merci à notre partenaire 123 Pare-Brise à Perreux !"},
+
+  {sec:"4ᵉ QUART-TEMPS"},
+  {marque:"TM", action:"DANSEURS", musique:"DANSEURS", salle:"DANSEURS"},
+  {marque:"TM", action:"ANIMATION SPEAKER", musique:"AMBIANCE",
+   com:"1 — On s'échauffe les poignets\n2 — Tape des mains doucement\n3 — Tape fort des mains\n4 — Tape des pieds\n5 — Tu cries comme sur un shoot à 3 pts\n6 — Tu tapes des mains, des pieds et tu cries le plus fort possible !!!"},
+  {marque:"TM", action:"ANIMATION SPEAKER",
+   com:"« On va mesurer la température des supporters ce soir.\nEst-ce que c'est… FROID ?!\nEst-ce que c'est… TIÈDE ?\nEst-ce que c'est… CHAUUUUUUD ??!\nOU EST-CE QUE C'EST EN FEUUUUU !!! »"},
+  {marque:"TM", action:"ANIMATION SPEAKER", com:"PROCHAIN MATCH : à compléter"},
+  {marque:"TM", action:"BORDEL GÉNÉRAL", musique:"BELLA CIAO", com:"FRACASSE TIME"},
+
+  {sec:"FIN DU MATCH"},
+  {marque:"Fin", action:"DÉDICACE", com:"Joueur à désigner"}
+];
+
+/* ============ conducteur de match ============ */
+/* Le deroule change d'un match a l'autre, surtout les temps-morts. On garde donc
+   un MODELE de saison que l'on duplique, et une BIBLIOTHEQUE de blocs reutilisables
+   pour ne pas resaisir les jeux partenaires et les animations a chaque rencontre. */
+
+function cloneLignes(src){
+  return (src || []).map(function(l){
+    var c = {id: uid("l")};
+    ["sec", "avant", "marque", "action", "musique", "salle", "com"].forEach(function(k){
+      if(l[k] !== undefined && l[k] !== null && l[k] !== "") c[k] = l[k];
+    });
+    return c;
+  });
+}
+
+function initRun(){
+  if(!S.modele || !S.modele.length) S.modele = cloneLignes(MODELE_DEFAUT);
+  if(!S.run || typeof S.run !== "object") S.run = {heure:"20:00", lignes:[]};
+  if(!S.run.lignes || !S.run.lignes.length) S.run.lignes = cloneLignes(S.modele);
+  if(!S.run.heure) S.run.heure = "20:00";
+  if(!S.biblio) S.biblio = [];
+}
+
+/** Heure d'horloge correspondant a N minutes avant l'entre-deux. */
+function heureDe(avant){
+  var h = (S.run.heure || "20:00").split(":");
+  var t = (parseInt(h[0], 10) || 0) * 60 + (parseInt(h[1], 10) || 0) - (avant || 0);
+  t = ((t % 1440) + 1440) % 1440;
+  return String(Math.floor(t / 60)).padStart(2, "0") + "h" + String(t % 60).padStart(2, "0");
+}
+
+function renderRun(){
+  var m = $("run");
+  if(!m) return;
+  m.innerHTML = "";
+  var edit = !!S.runEdit;
+
+  S.run.lignes.forEach(function(l, i){
+    m.appendChild(l.sec !== undefined ? sectionRun(l, i, edit) : ligneRun(l, i, edit));
+  });
+
+  if(!S.run.lignes.length){
+    m.appendChild(el("div", "empty", "Déroulé vide — repars du modèle avec le bouton Modèle."));
+  }
+
+  var z = $("r-actions");
+  z.innerHTML = "";
+  if(edit){
+    [["＋ Ligne", function(){ ajouterLigne({action:""}); }],
+     ["＋ Section", function(){
+        demander({titre:"Nouvelle section", message:"Titre de la section",
+                  placeholder:"ex. PROLONGATION", valider:"Ajouter"}).then(function(v){
+          if(v && v.trim()) ajouterLigne({sec:v.trim().toUpperCase()});
+        });
+      }],
+     ["＋ Depuis la bibliothèque", function(){ insererDepuisBiblio(); }]
+    ].forEach(function(b){
+      var bt = el("button", "btn sm" + (b[0].indexOf("Ligne") > 0 ? " primary" : " ghost"), b[0]);
+      bt.addEventListener("click", b[1]);
+      z.appendChild(bt);
+    });
+  } else {
+    var n = S.run.lignes.filter(function(l){ return l.sec === undefined; }).length;
+    var f = S.run.lignes.filter(function(l){ return l.fait; }).length;
+    z.appendChild(el("span", "vide", f + " / " + n + " étapes faites"));
+    if(f){
+      var raz = el("button", "btn sm ghost", "Tout décocher");
+      raz.addEventListener("click", function(){
+        S.run.lignes.forEach(function(l){ delete l.fait; });
+        save(); renderRun();
+      });
+      z.appendChild(raz);
+    }
+  }
+}
+
+function sectionRun(l, i, edit){
+  var d = el("div", "runsec");
+  if(edit){
+    var inp = document.createElement("input");
+    inp.type = "text"; inp.value = l.sec; inp.style.flex = "1";
+    inp.addEventListener("change", function(){ l.sec = inp.value; save(); });
+    d.appendChild(inp);
+    d.appendChild(boutonsOrdre(i));
+    var x = el("button", "sx x", "✕");
+    x.addEventListener("click", function(){ supprimerLigne(i); });
+    d.appendChild(x);
+  } else {
+    d.appendChild(el("span", null, l.sec));
+  }
+  return d;
+}
+
+function ligneRun(l, i, edit){
+  var d = el("div", "runrow" + (l.fait ? " fait" : ""));
+
+  if(edit){
+    var rep = document.createElement("input");
+    rep.type = "text";
+    rep.value = l.avant != null ? "M-" + l.avant : (l.marque || "");
+    rep.title = "« M-20 » calcule l'heure. Tout autre texte reste tel quel (TM, Inter QT…).";
+    rep.addEventListener("change", function(){
+      var v = rep.value.trim();
+      var mm = v.match(/^M\s*-\s*(\d+)$/i);
+      if(mm){ l.avant = parseInt(mm[1], 10); delete l.marque; }
+      else { delete l.avant; l.marque = v; }
+      save(); renderRun();
+    });
+    d.appendChild(rep);
+    [["action", "Action"], ["musique", "Musique"], ["salle", "Salle"]].forEach(function(c){
+      var inp = document.createElement("input");
+      inp.type = "text"; inp.value = l[c[0]] || ""; inp.placeholder = c[1];
+      inp.addEventListener("change", function(){
+        if(inp.value.trim()) l[c[0]] = inp.value.trim(); else delete l[c[0]];
+        save();
+      });
+      d.appendChild(inp);
+    });
+    var ta = document.createElement("textarea");
+    ta.value = l.com || ""; ta.placeholder = "Commentaire";
+    ta.addEventListener("change", function(){
+      if(ta.value.trim()) l.com = ta.value.trim(); else delete l.com;
+      save();
+    });
+    d.appendChild(ta);
+
+    var col = el("div", "ord");
+    var up = el("button", null, "▲"); up.addEventListener("click", function(){ deplacerLigne(i, -1); });
+    var dn = el("button", null, "▼"); dn.addEventListener("click", function(){ deplacerLigne(i, 1); });
+    var bi = el("button", null, "☆"); bi.title = "Enregistrer dans la bibliothèque";
+    bi.addEventListener("click", function(){ versBiblio(l); });
+    var x = el("button", null, "✕"); x.addEventListener("click", function(){ supprimerLigne(i); });
+    [up, dn, bi, x].forEach(function(b){ col.appendChild(b); });
+    d.appendChild(col);
+    return d;
+  }
+
+  var h = el("div", "h");
+  if(l.avant != null){
+    h.appendChild(document.createTextNode(heureDe(l.avant)));
+    h.appendChild(el("small", null, l.avant === 0 ? "entre-deux" : "M-" + l.avant));
+  } else {
+    h.appendChild(document.createTextNode(l.marque || ""));
+  }
+  d.appendChild(h);
+  d.appendChild(el("div", "a", l.action || ""));
+  d.appendChild(el("div", "m", l.musique || ""));
+  d.appendChild(el("div", "sl", l.salle || ""));
+  d.appendChild(el("div", "cm", l.com || ""));
+
+  var ck = el("button", "ck", "✓");
+  ck.setAttribute("aria-pressed", l.fait ? "true" : "false");
+  ck.title = "Étape faite";
+  ck.addEventListener("click", function(){
+    if(l.fait) delete l.fait; else l.fait = true;
+    save(); renderRun();
+  });
+  d.appendChild(ck);
+  return d;
+}
+
+function boutonsOrdre(i){
+  var col = el("div", "ord");
+  var up = el("button", null, "▲"); up.addEventListener("click", function(){ deplacerLigne(i, -1); });
+  var dn = el("button", null, "▼"); dn.addEventListener("click", function(){ deplacerLigne(i, 1); });
+  col.appendChild(up); col.appendChild(dn);
+  return col;
+}
+function deplacerLigne(i, d){
+  var k = i + d;
+  if(k < 0 || k >= S.run.lignes.length) return;
+  var t = S.run.lignes[i];
+  S.run.lignes[i] = S.run.lignes[k];
+  S.run.lignes[k] = t;
+  save(); renderRun();
+}
+function supprimerLigne(i){
+  S.run.lignes.splice(i, 1);
+  save(); renderRun();
+}
+function ajouterLigne(modele){
+  var l = cloneLignes([modele])[0];
+  S.run.lignes.push(l);
+  save(); renderRun();
+}
+
+/* ---- bibliothèque ---- */
+function versBiblio(l){
+  var b = cloneLignes([l])[0];
+  delete b.avant; delete b.marque; delete b.fait;
+  b.titre = l.action || "Bloc";
+  S.biblio.push(b);
+  S.biblio.sort(function(a, c){ return (a.titre || "").localeCompare(c.titre || "", "fr"); });
+  save(); renderBiblio();
+  toast("« " + b.titre + " » ajouté à la bibliothèque.");
+}
+
+function insererDepuisBiblio(){
+  if(!S.biblio.length){
+    toast("La bibliothèque est vide. Depuis une ligne, le ☆ l'y enregistre.");
+    return;
+  }
+  dialogue(function(dg, fermer){
+    dg.appendChild(el("h3", null, "Insérer un bloc"));
+    var body = el("div", "body");
+    var rech = document.createElement("input");
+    rech.type = "text"; rech.className = "din"; rech.placeholder = "Rechercher…";
+    body.appendChild(rech);
+    var liste = el("div", "picklist");
+    body.appendChild(liste);
+    function dessiner(){
+      liste.innerHTML = "";
+      var q = sansAccent(rech.value.trim());
+      S.biblio.filter(function(b){
+        return !q || sansAccent((b.titre || "") + " " + (b.com || "")).indexOf(q) >= 0;
+      }).forEach(function(b){
+        var bt = el("button", null);
+        bt.appendChild(el("span", "pn", b.titre || "Bloc"));
+        if(b.musique) bt.appendChild(el("span", "pp", b.musique));
+        bt.addEventListener("click", function(){ fermer(b); });
+        liste.appendChild(bt);
+      });
+      if(!liste.children.length) liste.appendChild(el("div", "vide", "Aucun bloc ne correspond."));
+    }
+    rech.addEventListener("input", dessiner);
+    dessiner();
+    dg.appendChild(body);
+    var foot = el("div", "foot");
+    var a = el("button", "btn ghost", "Annuler");
+    a.addEventListener("click", function(){ fermer(null); });
+    foot.appendChild(a);
+    dg.appendChild(foot);
+    setTimeout(function(){ rech.focus(); }, 30);
+  }).then(function(b){
+    if(!b) return;
+    ajouterLigne({marque:"TM", action:b.action || b.titre, musique:b.musique, salle:b.salle, com:b.com});
+    toast("Bloc inséré en fin de déroulé.");
+  });
+}
+
+function renderBiblio(){
+  var m = $("l-biblio");
+  if(!m) return;
+  m.innerHTML = "";
+  var q = sansAccent(($("b-search") ? $("b-search").value : "").trim());
+  var vus = S.biblio.filter(function(b){
+    return !q || sansAccent((b.titre || "") + " " + (b.com || "")).indexOf(q) >= 0;
+  });
+  $("n-biblio").textContent = S.biblio.length + " bloc" + (S.biblio.length > 1 ? "s" : "");
+
+  if(!S.biblio.length){
+    m.appendChild(el("div", "empty",
+      "Bibliothèque vide. Dans le Conducteur, passe en modification et clique ☆ sur une ligne pour l'enregistrer ici."));
+    return;
+  }
+  if(!vus.length){ m.appendChild(el("div", "empty", "Aucun bloc ne correspond.")); return; }
+
+  var ul = el("ul", "blocs");
+  vus.forEach(function(b){
+    var li = el("li");
+    var d = el("div", "b");
+    d.appendChild(el("b", null, b.titre || "Bloc"));
+    var tags = [];
+    if(b.musique) tags.push("♪ " + b.musique);
+    if(b.salle) tags.push("Salle : " + b.salle);
+    if(tags.length) d.appendChild(el("div", "tags", tags.join("   ·   ")));
+    if(b.com) d.appendChild(el("div", "d", b.com));
+    li.appendChild(d);
+
+    var ins = el("button", "btn sm", "Insérer");
+    ins.addEventListener("click", function(){
+      ajouterLigne({marque:"TM", action:b.action || b.titre, musique:b.musique, salle:b.salle, com:b.com});
+      gotoTab("cond");
+      toast("Bloc inséré en fin de déroulé.");
+    });
+    li.appendChild(ins);
+
+    var ed = el("button", "btn sm ghost", "Modifier");
+    ed.addEventListener("click", function(){ editerBloc(b); });
+    li.appendChild(ed);
+
+    var x = el("button", "btn sm ghost danger", "Retirer");
+    x.addEventListener("click", function(){
+      confirmer({titre:"Retirer de la bibliothèque", danger:true, valider:"Retirer",
+                 message:"« " + (b.titre || "Bloc") + " » sera supprimé."}).then(function(ok){
+        if(!ok) return;
+        S.biblio = S.biblio.filter(function(x2){ return x2.id !== b.id; });
+        save(); renderBiblio();
+      });
+    });
+    li.appendChild(x);
+    ul.appendChild(li);
+  });
+  m.appendChild(ul);
+}
+
+function editerBloc(b){
+  dialogue(function(dg, fermer){
+    dg.appendChild(el("h3", null, b ? "Modifier le bloc" : "Nouveau bloc"));
+    var body = el("div", "body");
+    var champs = {};
+    [["titre", "Titre"], ["musique", "Musique"], ["salle", "Salle"]].forEach(function(c){
+      var lab = el("label", "dlab", c[1]);
+      var i = document.createElement("input");
+      i.type = "text"; i.className = "din"; i.value = (b && b[c[0]]) || "";
+      lab.appendChild(i); body.appendChild(lab);
+      champs[c[0]] = i;
+    });
+    var lab = el("label", "dlab", "Commentaire");
+    var ta = document.createElement("textarea");
+    ta.className = "din"; ta.rows = 6; ta.value = (b && b.com) || "";
+    lab.appendChild(ta); body.appendChild(lab);
+    champs.com = ta;
+    dg.appendChild(body);
+    var foot = el("div", "foot");
+    var a = el("button", "btn ghost", "Annuler");
+    a.addEventListener("click", function(){ fermer(null); });
+    var ok = el("button", "btn primary", "Enregistrer");
+    ok.addEventListener("click", function(){
+      if(!champs.titre.value.trim()){ toast("Donne un titre au bloc."); return; }
+      var cible = b || {id: uid("b")};
+      cible.titre = champs.titre.value.trim();
+      cible.action = cible.titre;
+      ["musique", "salle", "com"].forEach(function(k){
+        var v = champs[k].value.trim();
+        if(v) cible[k] = v; else delete cible[k];
+      });
+      if(!b) S.biblio.push(cible);
+      S.biblio.sort(function(x, y){ return (x.titre || "").localeCompare(y.titre || "", "fr"); });
+      save(); renderBiblio(); fermer(null);
+    });
+    foot.appendChild(a); foot.appendChild(ok);
+    dg.appendChild(foot);
+    setTimeout(function(){ champs.titre.focus(); }, 30);
+  });
+}
+
+/* ---- modèle de saison ---- */
+function menuModele(){
+  dialogue(function(dg, fermer){
+    dg.appendChild(el("h3", null, "Modèle de saison"));
+    var body = el("div", "body");
+    body.appendChild(el("p", "msg",
+      "Le modèle est ton déroulé type. Tu le dupliques pour chaque rencontre, puis tu ajustes "
+      + "les temps-morts et les animations du soir."));
+    body.appendChild(el("div", "q", "Modèle actuel : " + S.modele.length + " lignes."));
+    dg.appendChild(body);
+    var foot = el("div", "foot");
+    var a = el("button", "btn ghost", "Annuler");
+    a.addEventListener("click", function(){ fermer(null); });
+    var maj = el("button", "btn ghost", "Enregistrer ce déroulé comme modèle");
+    maj.addEventListener("click", function(){
+      fermer(null);
+      confirmer({titre:"Remplacer le modèle", valider:"Remplacer",
+        message:"Le déroulé affiché deviendra le modèle de saison, utilisé pour les prochaines rencontres."
+      }).then(function(ok){
+        if(!ok) return;
+        S.modele = cloneLignes(S.run.lignes);
+        S.modele.forEach(function(l){ delete l.fait; });
+        save(); toast("Modèle enregistré.");
+      });
+    });
+    var neuf = el("button", "btn primary", "Repartir du modèle");
+    neuf.addEventListener("click", function(){
+      fermer(null);
+      confirmer({titre:"Nouveau déroulé", danger:true, valider:"Repartir du modèle",
+        message:"Le déroulé de la rencontre en cours sera remplacé par le modèle. Tes cases cochées seront perdues."
+      }).then(function(ok){
+        if(!ok) return;
+        S.run.lignes = cloneLignes(S.modele);
+        save(); renderRun(); toast("Déroulé réinitialisé depuis le modèle.");
+      });
+    });
+    foot.appendChild(a); foot.appendChild(maj); foot.appendChild(neuf);
+    dg.appendChild(foot);
+  });
+}
+
 /* ============ onglets ============ */
-var panels = {compo:"p-compo", cond:"p-cond", off:"p-off", data:"p-data"};
+var panels = {compo:"p-compo", cond:"p-cond", biblio:"p-biblio", off:"p-off", data:"p-data"};
 document.querySelectorAll("nav.tabs button").forEach(function(b){
   b.addEventListener("click", function(){
     document.querySelectorAll("nav.tabs button").forEach(function(x){
       x.setAttribute("aria-selected", x === b ? "true" : "false");
     });
     for(var k in panels) $(panels[k]).hidden = (k !== b.dataset.tab);
-    if(b.dataset.tab === "cond") renderScript();
+    if(b.dataset.tab === "cond") renderRun();
+    if(b.dataset.tab === "biblio") renderBiblio();
   });
 });
 function gotoTab(name){
@@ -1040,7 +1590,7 @@ function gotoTab(name){
 }
 
 /* ============ composition ============ */
-function renderAll(){ renderCompo(); renderScript(); renderOff(); renderData(); }
+function renderAll(){ renderCompo(); renderScript(); renderRun(); renderBiblio(); renderOff(); renderData(); }
 function renderCompo(){
   renderTeam($("t-home"), S.home, "Recevants");
   renderTeam($("t-away"), S.away, "Visiteurs");
@@ -1598,6 +2148,18 @@ $("c-photos").addEventListener("click", function(){
   save(); renderCompo(); renderScript();
 });
 $("c-print").addEventListener("click", function(){ window.print(); });
+$("r-print").addEventListener("click", function(){ window.print(); });
+$("r-heure").addEventListener("change", function(e){
+  S.run.heure = e.target.value || "20:00"; save(); renderRun();
+});
+$("r-edit").addEventListener("click", function(){
+  S.runEdit = !S.runEdit;
+  this.textContent = S.runEdit ? "Terminer les modifications" : "Modifier le déroulé";
+  save(); renderRun();
+});
+$("r-modele").addEventListener("click", menuModele);
+$("b-add").addEventListener("click", function(){ editerBloc(null); });
+$("b-search").addEventListener("input", renderBiblio);
 $("c-theme").addEventListener("click", function(){
   var cur = document.documentElement.getAttribute("data-theme");
   var next = cur === "dark" ? "light" : "dark";
@@ -1614,12 +2176,15 @@ $("b-reset").addEventListener("click", function(){
              "toutes tes prononciations",
              "tes équipes créées et les joueurs ajoutés à la main",
              "le capitaine désigné est effacé avec la composition",
+             "le conducteur repart du modèle de saison",
+             "ta bibliothèque de jeux et d'animations est conservée",
              "les rôles de la table de marque (seules les personnes sont retirées)"]
   }).then(function(ok){
     if(!ok) return;
     S.home = {compId:null, teamId:null};
     S.away = {compId:null, teamId:null};
     S.five = {}; S.out = {}; S.num = {}; S.capitaine = {}; S.date = "";
+    S.run.lignes = cloneLignes(S.modele);
     S.roles.arb.forEach(function(sl){ sl.personId = null; });
     S.roles.tab.forEach(function(sl){ sl.personId = null; });
     $("f-date").value = "";
@@ -1983,11 +2548,14 @@ window.addEventListener("offline", net);
 
 /* ============ démarrage ============ */
 load();
+initRun();
 chargerSync();
 if(S.theme) document.documentElement.setAttribute("data-theme", S.theme);
 $("c-stats").textContent = S.showStats ? "Masquer les stats" : "Afficher les stats";
 $("c-photos").textContent = S.showPhotos ? "Masquer les photos" : "Afficher les photos";
 $("f-date").value = S.date || "";
+$("r-heure").value = S.run.heure || "20:00";
+$("r-edit").textContent = S.runEdit ? "Terminer les modifications" : "Modifier le déroulé";
 net();
 renderOff();
 etatSync(syncPret() ? "connexion…" : "inactive");
