@@ -446,6 +446,23 @@ ul.blocs .b .tags{font-size:11px;color:var(--ink-2);margin-top:3px}
   .runrow{break-inside:avoid}
 }
 
+/* ---------- notes du match ---------- */
+.saisie{padding:13px;border-bottom:1px solid var(--line);background:var(--surface-2);display:flex;flex-direction:column;gap:9px}
+.saisie textarea{
+  width:100%;padding:11px 13px;background:var(--surface);border:1px solid var(--line);
+  border-radius:8px;font-size:16px;font-family:inherit;line-height:1.45;resize:vertical;
+}
+.saisie-a{display:flex;gap:8px}
+ul.notes{list-style:none;margin:0;padding:0}
+ul.notes li{display:flex;gap:12px;align-items:flex-start;padding:11px 14px;border-bottom:1px solid var(--line)}
+ul.notes li:last-child{border-bottom:none}
+ul.notes .q{
+  font-family:var(--display);font-size:17px;font-weight:700;color:var(--accent);
+  font-variant-numeric:tabular-nums;flex:none;min-width:48px;line-height:1.4;
+}
+ul.notes .q small{display:block;font-family:var(--body);font-size:10px;font-weight:500;color:var(--muted)}
+ul.notes .tx{flex:1;min-width:0;white-space:pre-wrap;font-size:14.5px;line-height:1.5;cursor:pointer}
+
 /* ---------- officiels ---------- */
 .off-grid{display:grid;gap:16px;grid-template-columns:1fr 1fr;align-items:start}
 @media (max-width:980px){.off-grid{grid-template-columns:1fr}}
@@ -499,6 +516,7 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
       <button role="tab" data-tab="compo" aria-selected="true">Composition</button>
       <button role="tab" data-tab="cond" aria-selected="false">Conducteur</button>
       <button role="tab" data-tab="biblio" aria-selected="false">Bibliothèque</button>
+      <button role="tab" data-tab="notes" aria-selected="false">Notes</button>
       <button role="tab" data-tab="off" aria-selected="false">Officiels</button>
       <button role="tab" data-tab="data" aria-selected="false">Données</button>
     </nav>
@@ -591,6 +609,20 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
         <button class="btn primary full" id="b-add">＋ Ajouter un élément</button>
       </div>
       <div id="l-biblio"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-notes" role="tabpanel" hidden>
+    <div class="card">
+      <header><h2>Notes du match</h2><span class="n" id="n-notes"></span></header>
+      <div class="saisie">
+        <textarea id="no-txt" rows="2" placeholder="Note rapide — Entrée pour valider, Maj+Entrée pour aller à la ligne"></textarea>
+        <div class="saisie-a">
+          <button class="btn primary" id="no-add">Noter</button>
+          <button class="btn ghost danger" id="no-raz">Tout effacer</button>
+        </div>
+      </div>
+      <ul class="notes" id="l-notes"></ul>
     </div>
   </section>
 
@@ -688,6 +720,7 @@ var S = {
   extra:{}, extraStaff:{},
   customTeams:[],
   run:{heure:"20:00", lignes:[]},   // deroule de la rencontre en cours
+  notes:[],                         // bloc-notes horodate du match
   cats:[], clubs:[], clubActif:null, // categories editables, un modele et une biblio par club
   modele:[], biblio:[], runEdit:false,
   arbitres:[], table:[],            // annuaires : identite seulement
@@ -2098,7 +2131,7 @@ function menuModele(){
 }
 
 /* ============ onglets ============ */
-var panels = {compo:"p-compo", cond:"p-cond", biblio:"p-biblio", off:"p-off", data:"p-data"};
+var panels = {compo:"p-compo", cond:"p-cond", biblio:"p-biblio", notes:"p-notes", off:"p-off", data:"p-data"};
 document.querySelectorAll("nav.tabs button").forEach(function(b){
   b.addEventListener("click", function(){
     document.querySelectorAll("nav.tabs button").forEach(function(x){
@@ -2107,6 +2140,7 @@ document.querySelectorAll("nav.tabs button").forEach(function(b){
     for(var k in panels) $(panels[k]).hidden = (k !== b.dataset.tab);
     if(b.dataset.tab === "cond") renderRun();
     if(b.dataset.tab === "biblio") renderBiblio();
+    if(b.dataset.tab === "notes") renderNotes();
   });
 });
 function gotoTab(name){
@@ -2116,7 +2150,7 @@ function gotoTab(name){
 }
 
 /* ============ composition ============ */
-function renderAll(){ renderCompo(); renderScript(); renderRun(); renderBiblio(); renderOff(); renderData(); }
+function renderAll(){ renderCompo(); renderScript(); renderRun(); renderBiblio(); renderNotes(); renderOff(); renderData(); }
 function renderCompo(){
   renderTeam($("t-home"), S.home, "Recevants");
   renderTeam($("t-away"), S.away, "Visiteurs");
@@ -2473,6 +2507,70 @@ function createTeam(side){
 $("b-newteam").addEventListener("click", function(){ createTeam(S.home); });
 $("f-date").addEventListener("change", function(e){ S.date = e.target.value; save(); renderScript(); });
 
+/* ============ notes du match ============ */
+/* Horodatees a la seconde ou on les pose : en relisant apres coup, savoir quand
+   une remarque est venue vaut souvent autant que la remarque elle-meme. */
+function ajouterNote(){
+  var ta = $("no-txt");
+  var t = (ta.value || "").trim();
+  if(!t){ ta.focus(); return; }
+  var d = new Date();
+  S.notes.unshift({
+    id: uid("n"),
+    h: String(d.getHours()).padStart(2, "0") + "h" + String(d.getMinutes()).padStart(2, "0"),
+    j: d.toLocaleDateString("fr-FR", {day:"numeric", month:"short"}),
+    txt: t
+  });
+  ta.value = "";
+  save(); renderNotes();
+  ta.focus();
+}
+
+function renderNotes(){
+  var ul = $("l-notes");
+  if(!ul) return;
+  ul.innerHTML = "";
+  var n = (S.notes || []).length;
+  $("n-notes").textContent = n ? n + " note" + (n > 1 ? "s" : "") : "";
+  if(!n){
+    var vide = el("li");
+    vide.appendChild(el("div", "tx",
+      "Aucune note. Écris ci-dessus et valide : chaque note est horodatée."));
+    vide.style.setProperty("color", "var(--muted)");
+    ul.appendChild(vide);
+    return;
+  }
+  S.notes.forEach(function(no){
+    var li = el("li");
+    var q = el("div", "q");
+    q.appendChild(document.createTextNode(no.h));
+    if(no.j) q.appendChild(el("small", null, no.j));
+    li.appendChild(q);
+
+    var tx = el("div", "tx", no.txt);
+    tx.title = "Modifier";
+    tx.addEventListener("click", function(){
+      demander({titre:"Modifier la note", message:no.h, valeur:no.txt,
+                valider:"Enregistrer"}).then(function(v){
+        if(v === null) return;
+        if(v.trim()){ no.txt = v.trim(); }
+        else { S.notes = S.notes.filter(function(x){ return x.id !== no.id; }); }
+        save(); renderNotes();
+      });
+    });
+    li.appendChild(tx);
+
+    var x = el("button", "btn sm ghost danger", "✕");
+    x.title = "Supprimer";
+    x.addEventListener("click", function(){
+      S.notes = S.notes.filter(function(y){ return y.id !== no.id; });
+      save(); renderNotes();
+    });
+    li.appendChild(x);
+    ul.appendChild(li);
+  });
+}
+
 /* ============ officiels : affectation par rencontre ============ */
 function annuaireDe(cat){ return cat === "arb" ? S.arbitres : S.table; }
 function personne(cat, id){
@@ -2687,6 +2785,21 @@ $("r-modele").addEventListener("click", menuModele);
 $("r-cats").addEventListener("click", gererCats);
 $("b-add").addEventListener("click", function(){ editerBloc(null); });
 $("b-search").addEventListener("input", renderBiblio);
+$("no-add").addEventListener("click", ajouterNote);
+$("no-txt").addEventListener("keydown", function(e){
+  // Entree valide, Maj+Entree passe a la ligne : la saisie doit rester rapide.
+  if(e.key === "Enter" && !e.shiftKey){
+    if(e.preventDefault) e.preventDefault();
+    ajouterNote();
+  }
+});
+$("no-raz").addEventListener("click", function(){
+  if(!S.notes.length) return;
+  confirmer({titre:"Effacer les notes", danger:true, valider:"Tout effacer",
+             message:S.notes.length + " note(s) seront supprimées."}).then(function(ok){
+    if(ok){ S.notes = []; save(); renderNotes(); }
+  });
+});
 $("c-theme").addEventListener("click", function(){
   var cur = document.documentElement.getAttribute("data-theme");
   var next = cur === "dark" ? "light" : "dark";
@@ -2704,13 +2817,14 @@ $("b-reset").addEventListener("click", function(){
              "tes équipes créées et les joueurs ajoutés à la main",
              "le capitaine désigné est effacé avec la composition",
              "le conducteur repart du modèle de saison",
+             "les notes du match sont effacées",
              "ta bibliothèque de jeux et d'animations est conservée",
              "les rôles de la table de marque (seules les personnes sont retirées)"]
   }).then(function(ok){
     if(!ok) return;
     S.home = {compId:null, teamId:null};
     S.away = {compId:null, teamId:null};
-    S.five = {}; S.out = {}; S.num = {}; S.capitaine = {}; S.date = "";
+    S.five = {}; S.out = {}; S.num = {}; S.capitaine = {}; S.date = ""; S.notes = [];
     S.run.lignes = cloneLignes(S.modele);
     S.roles.arb.forEach(function(sl){ sl.personId = null; });
     S.roles.tab.forEach(function(sl){ sl.personId = null; });
