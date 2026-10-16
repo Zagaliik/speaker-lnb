@@ -300,14 +300,68 @@ li.is-five{background:var(--accent-soft)}
 .empty{padding:24px 18px;text-align:center;color:var(--muted);font-size:14px}
 
 /* ---------- conducteur de match ---------- */
+/* Un conducteur de radio se lit a la couleur : chaque intervenant a la sienne.
+   Teintes choisies pour rester lisibles sur fond clair comme sur fond sombre. */
+:root{
+  --i-speaker:#C98100; --i-dj:#7B4FD4; --i-cube:#1F7FD4; --i-danse:#D4387E;
+  --i-mascotte:#1C8F4F; --i-partenaire:#C96218; --i-salle:#5C6B80; --i-jeu:#12897C;
+  --i-speaker-bg:rgba(201,129,0,.10);   --i-dj-bg:rgba(123,79,212,.09);
+  --i-cube-bg:rgba(31,127,212,.09);     --i-danse-bg:rgba(212,56,126,.09);
+  --i-mascotte-bg:rgba(28,143,79,.10);  --i-partenaire-bg:rgba(201,98,24,.10);
+  --i-salle-bg:rgba(92,107,128,.10);    --i-jeu-bg:rgba(18,137,124,.10);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --i-speaker:#FFB020; --i-dj:#A77BF3; --i-cube:#4EA8F5; --i-danse:#F56FB0;
+    --i-mascotte:#35C26B; --i-partenaire:#F0803C; --i-salle:#95A1B5; --i-jeu:#2BB8A8;
+    --i-speaker-bg:rgba(255,176,32,.11);  --i-dj-bg:rgba(167,123,243,.13);
+    --i-cube-bg:rgba(78,168,245,.13);     --i-danse-bg:rgba(245,111,176,.13);
+    --i-mascotte-bg:rgba(53,194,107,.12); --i-partenaire-bg:rgba(240,128,60,.12);
+    --i-salle-bg:rgba(149,161,181,.12);   --i-jeu-bg:rgba(43,184,168,.12);
+  }
+}
+:root[data-theme="dark"]{
+  --i-speaker:#FFB020; --i-dj:#A77BF3; --i-cube:#4EA8F5; --i-danse:#F56FB0;
+  --i-mascotte:#35C26B; --i-partenaire:#F0803C; --i-salle:#95A1B5; --i-jeu:#2BB8A8;
+  --i-speaker-bg:rgba(255,176,32,.11);  --i-dj-bg:rgba(167,123,243,.13);
+  --i-cube-bg:rgba(78,168,245,.13);   --i-danse-bg:rgba(245,111,176,.13);
+  --i-mascotte-bg:rgba(53,194,107,.12); --i-partenaire-bg:rgba(240,128,60,.12);
+  --i-salle-bg:rgba(149,161,181,.12);   --i-jeu-bg:rgba(43,184,168,.12);
+}
+/* Fond teinte sur toute la ligne, assez pale pour que le texte reste net. */
+.runrow{box-shadow:inset 4px 0 0 var(--i,transparent);background:var(--ibg,transparent)}
+.runrow.fait{opacity:.45}
+.qui{
+  display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--i,var(--muted));border:1px solid var(--i,var(--line));border-radius:3px;
+  padding:0 5px;margin-right:6px;vertical-align:1px;
+}
+.legende{display:flex;flex-wrap:wrap;gap:4px 12px;padding:8px 14px;border-bottom:1px solid var(--line);
+  background:var(--surface-2);font-size:11px}
+.legende span{display:flex;align-items:center;gap:5px;color:var(--ink-2)}
+.legende i{width:10px;height:10px;border-radius:2px;background:var(--i);display:inline-block}
+.note{display:block;margin-top:4px;padding:5px 8px;border-radius:6px;
+  background:var(--accent-soft);border:1px solid var(--accent);color:var(--ink);
+  font-size:12.5px;font-style:italic;white-space:pre-wrap;line-height:1.4}
+.btnote{
+  border:1px dashed var(--line);border-radius:6px;background:none;color:var(--muted);
+  font-size:11px;padding:2px 8px;margin-top:4px;
+}
+.btnote:hover{border-color:var(--accent);color:var(--accent)}
 .runhead,.runrow{
   display:grid;gap:10px;align-items:start;
   grid-template-columns:72px minmax(0,1.5fr) minmax(0,1fr) minmax(0,.8fr) minmax(0,2fr) 34px;
 }
 .runhead{
-  padding:7px 14px;background:var(--surface-2);border-bottom:1px solid var(--line);
+  padding:8px 14px;background:var(--surface-2);border-bottom:1px solid var(--line);
   font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+  /* Colle sous la barre d'onglets : les titres de colonnes restent lisibles au defilement.
+     Hauteur mesuree au chargement, la barre changeant de taille selon la largeur. */
+  position:sticky;top:var(--topbar,80px);z-index:12;
 }
+/* Un ancetre en overflow:hidden annulerait le collage : la carte du conducteur ne clippe pas. */
+.cond.runwrap{overflow:visible}
+.cond.runwrap .legende{border-radius:var(--radius) var(--radius) 0 0}
 .runrow{padding:9px 14px;border-bottom:1px solid var(--line);font-size:13.5px}
 .runrow:last-child{border-bottom:none}
 .runrow.fait{opacity:.42}
@@ -327,6 +381,8 @@ li.is-five{background:var(--accent-soft)}
   text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:9px;
 }
 .runsec .x{margin-left:auto}
+.runrow.edite{grid-template-columns:72px minmax(0,1.3fr) minmax(0,.9fr) minmax(0,.7fr) 108px minmax(0,1.7fr) 34px}
+.runrow select{width:100%;padding:6px 8px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;font-size:12.5px}
 .runrow input,.runrow textarea{
   width:100%;padding:6px 8px;background:var(--surface-2);border:1px solid var(--line);
   border-radius:6px;font-size:13px;font-family:inherit;
@@ -375,7 +431,7 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
 .row .k{font-size:13px;font-weight:500;min-width:170px}
 .row .v{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .row .a{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}
-.note{font-size:12.5px;color:var(--muted);padding:12px 14px;background:var(--surface);line-height:1.5}
+.rows .note,.card>.note{display:block;font-size:12.5px;color:var(--muted);padding:12px 14px;background:var(--surface);line-height:1.5;border:none;border-radius:0;font-style:normal}
 
 .toast{
   position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
@@ -469,7 +525,8 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
         <button class="btn ghost" id="r-print">Imprimer</button>
       </div>
     </div>
-    <div class="cond" style="margin-top:16px">
+    <div class="cond runwrap" style="margin-top:16px">
+      <div class="legende" id="legende"></div>
       <div class="runhead">
         <span class="c1">Heure</span><span class="c2">Action</span>
         <span class="c3">Musique</span><span class="c4">Salle</span><span class="c5">Commentaire</span>
@@ -1198,10 +1255,47 @@ var MODELE_DEFAUT = [
    un MODELE de saison que l'on duplique, et une BIBLIOTHEQUE de blocs reutilisables
    pour ne pas resaisir les jeux partenaires et les animations a chaque rencontre. */
 
+var INTERVENANTS = [
+  {id:"speaker",    nom:"Speaker",    c:"--i-speaker"},
+  {id:"dj",         nom:"DJ / Son",   c:"--i-dj"},
+  {id:"cube",       nom:"Cube / Écran", c:"--i-cube"},
+  {id:"danse",      nom:"Danseurs",   c:"--i-danse"},
+  {id:"mascotte",   nom:"Mascotte",   c:"--i-mascotte"},
+  {id:"partenaire", nom:"Partenaire", c:"--i-partenaire"},
+  {id:"jeu",        nom:"Jeu",        c:"--i-jeu"},
+  {id:"salle",      nom:"Salle",      c:"--i-salle"}
+];
+function intervenant(id){
+  return INTERVENANTS.filter(function(i){ return i.id === id; })[0] || null;
+}
+/** Deduit l'intervenant d'une ligne qui n'en a pas : les anciens deroules se
+    colorent sans ressaisie, et l'utilisateur peut toujours corriger. */
+function devineQui(l){
+  function test(t){
+    if(/danseu/.test(t)) return "danse";
+    if(/mascotte/.test(t)) return "mascotte";
+    if(/\bjeu\b|selection cube|pare.?brise|intersport|la star/.test(t)) return "jeu";
+    if(/publicite|partenaire|merci a notre/.test(t)) return "partenaire";
+    if(/terrain|ouverture des portes|accueil|echauffement|repetition|portes/.test(t)) return "salle";
+    if(/cube|video|qr code|ecran|discrimination/.test(t)) return "cube";
+    if(/hymne|playlist|mix dj|musique|let.s go|bella ciao|montee en motiv/.test(t)) return "dj";
+    return null;
+  }
+  var a = sansAccent(l.action || "");
+  if(/presentation|welcome|bienvenue|annonce|dedicace|animation speaker/.test(a)) return "speaker";
+  // L'action prime : une ligne "Accueil public" reste de la salle meme si la
+  // colonne musique mentionne une playlist.
+  return test(a)
+      || test(sansAccent([l.musique, l.salle, l.com].join(" ")))
+      || "speaker";
+}
+function quiDe(l){ return l.qui || devineQui(l); }
+
 function cloneLignes(src){
   return (src || []).map(function(l){
     var c = {id: uid("l")};
-    ["sec", "avant", "marque", "action", "musique", "salle", "com"].forEach(function(k){
+    // "note" et "fait" sont propres a une rencontre : jamais recopies.
+    ["sec", "avant", "marque", "action", "musique", "salle", "com", "qui"].forEach(function(k){
       if(l[k] !== undefined && l[k] !== null && l[k] !== "") c[k] = l[k];
     });
     return c;
@@ -1224,7 +1318,21 @@ function heureDe(avant){
   return String(Math.floor(t / 60)).padStart(2, "0") + "h" + String(t % 60).padStart(2, "0");
 }
 
+function renderLegende(){
+  var lg = $("legende");
+  if(!lg) return;
+  lg.innerHTML = "";
+  INTERVENANTS.forEach(function(i){
+    var sp = el("span");
+    sp.style.setProperty("--i", "var(" + i.c + ")");
+    sp.appendChild(el("i"));
+    sp.appendChild(document.createTextNode(i.nom));
+    lg.appendChild(sp);
+  });
+}
+
 function renderRun(){
+  renderLegende();
   var m = $("run");
   if(!m) return;
   m.innerHTML = "";
@@ -1287,7 +1395,12 @@ function sectionRun(l, i, edit){
 }
 
 function ligneRun(l, i, edit){
-  var d = el("div", "runrow" + (l.fait ? " fait" : ""));
+  var d = el("div", "runrow" + (l.fait ? " fait" : "") + (edit ? " edite" : ""));
+  var q = intervenant(quiDe(l));
+  if(q){
+    d.style.setProperty("--i", "var(" + q.c + ")");
+    d.style.setProperty("--ibg", "var(" + q.c + "-bg)");
+  }
 
   if(edit){
     var rep = document.createElement("input");
@@ -1311,6 +1424,14 @@ function ligneRun(l, i, edit){
       });
       d.appendChild(inp);
     });
+    var sq = document.createElement("select");
+    INTERVENANTS.forEach(function(it){
+      var o = el("option", null, it.nom); o.value = it.id; sq.appendChild(o);
+    });
+    sq.value = quiDe(l);
+    sq.addEventListener("change", function(){ l.qui = sq.value; save(); renderRun(); });
+    d.appendChild(sq);
+
     var ta = document.createElement("textarea");
     ta.value = l.com || ""; ta.placeholder = "Commentaire";
     ta.addEventListener("change", function(){
@@ -1338,10 +1459,34 @@ function ligneRun(l, i, edit){
     h.appendChild(document.createTextNode(l.marque || ""));
   }
   d.appendChild(h);
-  d.appendChild(el("div", "a", l.action || ""));
+  var av = el("div", "a");
+  if(q){
+    var pil = el("span", "qui", q.nom);
+    pil.style.setProperty("--i", "var(" + q.c + ")");
+    av.appendChild(pil);
+  }
+  av.appendChild(document.createTextNode(l.action || ""));
+  d.appendChild(av);
   d.appendChild(el("div", "m", l.musique || ""));
   d.appendChild(el("div", "sl", l.salle || ""));
-  d.appendChild(el("div", "cm", l.com || ""));
+
+  // Commentaire permanent, puis note du soir : saisissable sans quitter la lecture.
+  var cm = el("div", "cm");
+  if(l.com) cm.appendChild(document.createTextNode(l.com));
+  if(l.note) cm.appendChild(el("span", "note", l.note));
+  var bn = el("button", "btnote", l.note ? "Modifier la note" : "＋ Note du soir");
+  bn.addEventListener("click", function(){
+    demander({titre:"Note du soir", message:(l.action || "Cette étape")
+              + " — effacée quand tu repars du modèle.",
+              valeur:l.note || "", placeholder:"ex. remercier le groupe scolaire présent",
+              valider:"Noter"}).then(function(v){
+      if(v === null) return;
+      if(v.trim()) l.note = v.trim(); else delete l.note;
+      save(); renderRun();
+    });
+  });
+  cm.appendChild(bn);
+  d.appendChild(cm);
 
   var ck = el("button", "ck", "✓");
   ck.setAttribute("aria-pressed", l.fait ? "true" : "false");
@@ -2536,6 +2681,16 @@ function demarrerSync(){
   rafraichirLive();
 }
 
+/* ============ barre supérieure ============ */
+/* La hauteur de l'en-tete varie avec la largeur de l'ecran : on la mesure plutot
+   que de la coder en dur, sinon les titres de colonnes se collent au mauvais endroit. */
+function mesurerBarre(){
+  var h = document.querySelector ? document.querySelector("header.top") : null;
+  if(!h || !h.getBoundingClientRect) return;
+  var px = Math.round(h.getBoundingClientRect().height);
+  if(px > 0) document.documentElement.style.setProperty("--topbar", px + "px");
+}
+
 /* ============ réseau ============ */
 function net(){
   var on = navigator.onLine;
@@ -2557,6 +2712,8 @@ $("f-date").value = S.date || "";
 $("r-heure").value = S.run.heure || "20:00";
 $("r-edit").textContent = S.runEdit ? "Terminer les modifications" : "Modifier le déroulé";
 net();
+mesurerBarre();
+window.addEventListener("resize", mesurerBarre);
 renderOff();
 etatSync(syncPret() ? "connexion…" : "inactive");
 demarrerSync();
