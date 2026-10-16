@@ -542,7 +542,7 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
       </div>
       <div class="field">
         <label>&nbsp;</label>
-        <button class="btn ghost" id="r-modele">Modèle</button>
+        <button class="btn ghost" id="r-modele">Club &amp; modèle</button>
       </div>
       <div class="field">
         <label>&nbsp;</label>
@@ -1515,7 +1515,6 @@ function renderRun(){
 
 function sectionRun(l, i, edit){
   var d = el("div", "runsec");
-  d.dataset = {i: i};
   if(edit){
     d.appendChild(poignee(i));
     var inp = document.createElement("input");
@@ -1533,7 +1532,6 @@ function sectionRun(l, i, edit){
 
 function ligneRun(l, i, edit){
   var d = el("div", "runrow" + (l.fait ? " fait" : "") + (edit ? " edite" : ""));
-  d.dataset = {i: i};
   var c = cat(catDe(l));
   d.style.setProperty("--i", c.c);
   d.style.setProperty("--ibg", hexRgba(c.c, 0.12));
@@ -1965,14 +1963,49 @@ function gererCats(){
 function menuModele(){
   var cl = clubActif();
   dialogue(function(dg, fermer){
-    dg.appendChild(el("h3", null, "Modèle — " + cl.nom));
+    dg.appendChild(el("h3", null, "Club — " + cl.nom));
     var body = el("div", "body");
     body.appendChild(el("p", "msg",
-      "Chaque club a son propre modèle : son déroulé type, ses textes, ses habitudes."));
-    body.appendChild(el("div", "q", "Modèle de " + cl.nom + " : " + modeleActif().length + " lignes."));
+      "Chaque club a son propre modèle et sa propre bibliothèque : son déroulé type, "
+      + "ses textes, ses habitudes."));
+    body.appendChild(el("div", "q", "Modèle : " + modeleActif().length
+      + " lignes  ·  Bibliothèque : " + biblioActive().length + " éléments"));
+
+    var ren = el("button", "btn sm ghost", "Renommer ce club");
+    ren.addEventListener("click", function(){
+      fermer(null);
+      demander({titre:"Renommer le club", message:"Nouveau nom",
+                valeur:cl.nom, valider:"Renommer"}).then(function(v){
+        if(v === null || !v.trim()) return;
+        cl.nom = v.trim();
+        save(); renderRun(); renderBiblio();
+        toast("Club renommé.");
+      });
+    });
+    body.appendChild(ren);
+
+    var sup = el("button", "btn sm ghost danger", "Supprimer ce club");
+    sup.addEventListener("click", function(){
+      fermer(null);
+      if(S.clubs.length < 2){ toast("Garde au moins un club."); return; }
+      confirmer({titre:"Supprimer " + cl.nom, danger:true, valider:"Supprimer",
+        message:"Son modèle et sa bibliothèque seront perdus.",
+        details:[modeleActif().length + " lignes de modèle",
+                 biblioActive().length + " éléments de bibliothèque"]
+      }).then(function(ok){
+        if(!ok) return;
+        S.clubs = S.clubs.filter(function(c){ return c.id !== cl.id; });
+        S.clubActif = S.clubs[0].id;
+        S.run.lignes = cloneLignes(modeleActif());
+        save(); renderRun(); renderBiblio();
+        toast("Club supprimé. Tu es sur " + S.clubs[0].nom + ".");
+      });
+    });
+    body.appendChild(sup);
     dg.appendChild(body);
+
     var foot = el("div", "foot");
-    var a = el("button", "btn ghost", "Annuler");
+    var a = el("button", "btn ghost", "Fermer");
     a.addEventListener("click", function(){ fermer(null); });
     var maj = el("button", "btn ghost", "Enregistrer comme modèle");
     maj.addEventListener("click", function(){
