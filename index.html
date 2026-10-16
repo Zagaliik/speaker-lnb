@@ -336,6 +336,20 @@ li.is-five{background:var(--accent-soft)}
   color:var(--i,var(--muted));border:1px solid var(--i,var(--line));border-radius:3px;
   padding:0 5px;margin-right:6px;vertical-align:1px;
 }
+.poignee{
+  width:26px;height:30px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);
+  color:var(--muted);font-size:13px;display:grid;place-items:center;cursor:grab;touch-action:none;
+}
+.runrow.glisse{opacity:.5}
+.runrow.cible{box-shadow:inset 4px 0 0 var(--i,transparent), 0 -2px 0 var(--accent)}
+.catchip{
+  display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  border-radius:3px;padding:1px 6px;margin-right:6px;vertical-align:1px;
+}
+.catline{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.catline:last-child{border-bottom:none}
+.catline input[type=text]{flex:1;min-width:0;padding:6px 9px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;font-size:13px}
+.catline input[type=color]{width:38px;height:30px;padding:0;border:1px solid var(--line);border-radius:6px;background:none}
 .legende{display:flex;flex-wrap:wrap;gap:4px 12px;padding:8px 14px;border-bottom:1px solid var(--line);
   background:var(--surface-2);font-size:11px}
 .legende span{display:flex;align-items:center;gap:5px;color:var(--ink-2)}
@@ -509,16 +523,24 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
   <section class="panel" id="p-cond" role="tabpanel" hidden>
     <div class="matchbar">
       <div class="field">
+        <label for="r-club">Club</label>
+        <select id="r-club"></select>
+      </div>
+      <div class="field">
         <label for="r-heure">Heure de l'entre-deux</label>
         <input type="time" id="r-heure" value="20:00">
       </div>
       <div class="field spacer">
         <label>&nbsp;</label>
-        <button class="btn" id="r-edit">Modifier le déroulé</button>
+        <button class="btn primary" id="r-edit">Modifier le déroulé</button>
       </div>
       <div class="field">
         <label>&nbsp;</label>
         <button class="btn ghost" id="r-modele">Modèle</button>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn ghost" id="r-cats">Catégories</button>
       </div>
       <div class="field">
         <label>&nbsp;</label>
@@ -539,11 +561,13 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
   <section class="panel" id="p-biblio" role="tabpanel" hidden>
     <div class="card">
       <header><h2>Bibliothèque</h2><span class="n" id="n-biblio"></span></header>
-      <div class="note">Les jeux, animations et temps-morts que tu réutilises d'un match à l'autre.
-        Depuis le Conducteur, « ＋ Depuis la bibliothèque » les insère en un clic.</div>
+      <div class="note">Tout ce que tu réutilises : danseurs, partenaires, temps-morts,
+        obligations LNB, jeux. Chaque club a la sienne. Depuis le Conducteur, tu viens y piocher.</div>
       <div class="addrow">
+        <select id="b-club"></select>
+        <select id="b-cat"></select>
         <input class="full search" id="b-search" placeholder="Rechercher…" autocomplete="off">
-        <button class="btn primary full" id="b-add">＋ Ajouter un bloc</button>
+        <button class="btn primary full" id="b-add">＋ Ajouter un élément</button>
       </div>
       <div id="l-biblio"></div>
     </div>
@@ -641,6 +665,7 @@ var S = {
   extra:{}, extraStaff:{},
   customTeams:[],
   run:{heure:"20:00", lignes:[]},   // deroule de la rencontre en cours
+  cats:[], clubs:[], clubActif:null, // categories editables, un modele et une biblio par club
   modele:[], biblio:[], runEdit:false,
   arbitres:[], table:[],            // annuaires : identite seulement
   roles:{arb:[], tab:[]},           // affectations propres a la rencontre
@@ -1250,52 +1275,72 @@ var MODELE_DEFAUT = [
   {marque:"Fin", action:"DÉDICACE", com:"Joueur à désigner"}
 ];
 
-/* ============ conducteur de match ============ */
-/* Le deroule change d'un match a l'autre, surtout les temps-morts. On garde donc
-   un MODELE de saison que l'on duplique, et une BIBLIOTHEQUE de blocs reutilisables
-   pour ne pas resaisir les jeux partenaires et les animations a chaque rencontre. */
+/* ============ catégories, clubs, bibliothèque, conducteur ============ */
+/* Rien n'est fige : les categories et leurs couleurs s'editent, chaque club a son
+   modele et sa bibliotheque, et le conducteur du soir s'assemble en piochant dedans. */
 
-var INTERVENANTS = [
-  {id:"speaker",    nom:"Speaker",    c:"--i-speaker"},
-  {id:"dj",         nom:"DJ / Son",   c:"--i-dj"},
-  {id:"cube",       nom:"Cube / Écran", c:"--i-cube"},
-  {id:"danse",      nom:"Danseurs",   c:"--i-danse"},
-  {id:"mascotte",   nom:"Mascotte",   c:"--i-mascotte"},
-  {id:"partenaire", nom:"Partenaire", c:"--i-partenaire"},
-  {id:"jeu",        nom:"Jeu",        c:"--i-jeu"},
-  {id:"salle",      nom:"Salle",      c:"--i-salle"}
+var CATS_DEFAUT = [
+  {id:"speaker",    nom:"Speaker",         c:"#F2C200"},
+  {id:"danse",      nom:"Danseurs",        c:"#2E86DE"},
+  {id:"oblig",      nom:"Obligations LNB", c:"#27E36A"},
+  {id:"tm",         nom:"Temps-mort",      c:"#A77BF3"},
+  {id:"partenaire", nom:"Partenaire",      c:"#F0803C"},
+  {id:"jeu",        nom:"Jeu",             c:"#2BB8A8"},
+  {id:"mascotte",   nom:"Mascotte",        c:"#F56FB0"},
+  {id:"dj",         nom:"Son / DJ",        c:"#9AA6B8"},
+  {id:"salle",      nom:"Salle",           c:"#5C6B80"}
 ];
-function intervenant(id){
-  return INTERVENANTS.filter(function(i){ return i.id === id; })[0] || null;
+
+/* ---- couleurs : une seule valeur saisie, tous les usages derives ---- */
+function hexRgb(h){
+  h = String(h || "#888").replace("#", "");
+  if(h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  var n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
-/** Deduit l'intervenant d'une ligne qui n'en a pas : les anciens deroules se
-    colorent sans ressaisie, et l'utilisateur peut toujours corriger. */
-function devineQui(l){
-  function test(t){
-    if(/danseu/.test(t)) return "danse";
-    if(/mascotte/.test(t)) return "mascotte";
-    if(/\bjeu\b|selection cube|pare.?brise|intersport|la star/.test(t)) return "jeu";
-    if(/publicite|partenaire|merci a notre/.test(t)) return "partenaire";
-    if(/terrain|ouverture des portes|accueil|echauffement|repetition|portes/.test(t)) return "salle";
-    if(/cube|video|qr code|ecran|discrimination/.test(t)) return "cube";
-    if(/hymne|playlist|mix dj|musique|let.s go|bella ciao|montee en motiv/.test(t)) return "dj";
+function hexRgba(h, a){ var r = hexRgb(h); return "rgba(" + r[0] + "," + r[1] + "," + r[2] + "," + a + ")"; }
+/** Texte lisible sur un aplat : noir sur couleur claire, blanc sur couleur sombre. */
+function texteSur(h){
+  var r = hexRgb(h);
+  return (0.299 * r[0] + 0.587 * r[1] + 0.114 * r[2]) > 150 ? "#14181F" : "#FFFFFF";
+}
+
+function cat(id){
+  var l = S.cats || [];
+  return l.filter(function(c){ return c.id === id; })[0] || l[0] || CATS_DEFAUT[0];
+}
+function devineCat(l){
+  function t(x){
+    if(/danseu/.test(x)) return "danse";
+    if(/mascotte/.test(x)) return "mascotte";
+    if(/discrimination|hymne|super coupe|lnb/.test(x)) return "oblig";
+    if(/\bjeu\b|selection cube|pare.?brise|intersport|la star/.test(x)) return "jeu";
+    if(/publicite|partenaire|merci a notre/.test(x)) return "partenaire";
+    if(/terrain|portes|accueil|echauffement|repetition/.test(x)) return "salle";
+    if(/cube|video|qr code|ecran/.test(x)) return "cube";
+    if(/playlist|mix dj|musique|bella ciao/.test(x)) return "dj";
     return null;
   }
   var a = sansAccent(l.action || "");
   if(/presentation|welcome|bienvenue|annonce|dedicace|animation speaker/.test(a)) return "speaker";
-  // L'action prime : une ligne "Accueil public" reste de la salle meme si la
-  // colonne musique mentionne une playlist.
-  return test(a)
-      || test(sansAccent([l.musique, l.salle, l.com].join(" ")))
-      || "speaker";
+  var id = t(a) || t(sansAccent([l.musique, l.salle, l.com].join(" "))) || "speaker";
+  return cat(id).id;
 }
-function quiDe(l){ return l.qui || devineQui(l); }
+function catDe(l){ return l.cat || devineCat(l); }
+
+/* ---- clubs ---- */
+function clubActif(){
+  var l = S.clubs || [];
+  return l.filter(function(c){ return c.id === S.clubActif; })[0] || l[0] || null;
+}
+function biblioActive(){ var c = clubActif(); return c ? (c.biblio = c.biblio || []) : []; }
+function modeleActif(){ var c = clubActif(); return c ? (c.modele = c.modele || []) : []; }
 
 function cloneLignes(src){
   return (src || []).map(function(l){
     var c = {id: uid("l")};
-    // "note" et "fait" sont propres a une rencontre : jamais recopies.
-    ["sec", "avant", "marque", "action", "musique", "salle", "com", "qui"].forEach(function(k){
+    // "note" et "fait" appartiennent a une rencontre : jamais recopies.
+    ["sec", "avant", "marque", "action", "musique", "salle", "com", "cat"].forEach(function(k){
       if(l[k] !== undefined && l[k] !== null && l[k] !== "") c[k] = l[k];
     });
     return c;
@@ -1303,14 +1348,18 @@ function cloneLignes(src){
 }
 
 function initRun(){
-  if(!S.modele || !S.modele.length) S.modele = cloneLignes(MODELE_DEFAUT);
+  if(!S.cats || !S.cats.length) S.cats = JSON.parse(JSON.stringify(CATS_DEFAUT));
+  if(!S.clubs || !S.clubs.length){
+    S.clubs = [{id: uid("c"), nom: "Mon club",
+                modele: cloneLignes((S.modele && S.modele.length) ? S.modele : MODELE_DEFAUT),
+                biblio: S.biblio || []}];
+  }
+  if(!S.clubActif || !clubActif()) S.clubActif = S.clubs[0].id;
   if(!S.run || typeof S.run !== "object") S.run = {heure:"20:00", lignes:[]};
-  if(!S.run.lignes || !S.run.lignes.length) S.run.lignes = cloneLignes(S.modele);
+  if(!S.run.lignes || !S.run.lignes.length) S.run.lignes = cloneLignes(modeleActif());
   if(!S.run.heure) S.run.heure = "20:00";
-  if(!S.biblio) S.biblio = [];
 }
 
-/** Heure d'horloge correspondant a N minutes avant l'entre-deux. */
 function heureDe(avant){
   var h = (S.run.heure || "20:00").split(":");
   var t = (parseInt(h[0], 10) || 0) * 60 + (parseInt(h[1], 10) || 0) - (avant || 0);
@@ -1318,20 +1367,56 @@ function heureDe(avant){
   return String(Math.floor(t / 60)).padStart(2, "0") + "h" + String(t % 60).padStart(2, "0");
 }
 
+/* ---- rendu ---- */
+function remplirClubs(sel, onChange){
+  if(!sel) return;
+  sel.innerHTML = "";
+  (S.clubs || []).forEach(function(c){
+    var o = el("option", null, c.nom); o.value = c.id; sel.appendChild(o);
+  });
+  var n = el("option", null, "＋ Nouveau club…"); n.value = "__new"; sel.appendChild(n);
+  sel.value = S.clubActif;
+  if(!sel._lie){
+    sel._lie = true;
+    sel.addEventListener("change", function(){
+      if(sel.value === "__new"){ creerClub(); return; }
+      S.clubActif = sel.value;
+      save(); onChange();
+    });
+  }
+}
+function creerClub(){
+  demander({titre:"Nouveau club", message:"Nom du club",
+            placeholder:"ex. Chartres", valider:"Créer"}).then(function(v){
+    if(!v || !v.trim()){ renderRun(); renderBiblio(); return; }
+    var c = {id: uid("c"), nom: v.trim(), modele: [], biblio: []};
+    S.clubs.push(c);
+    S.clubActif = c.id;
+    save(); renderRun(); renderBiblio();
+    toast("Club créé. Sa bibliothèque et son modèle sont vides.");
+  });
+}
+
 function renderLegende(){
   var lg = $("legende");
   if(!lg) return;
   lg.innerHTML = "";
-  INTERVENANTS.forEach(function(i){
+  (S.cats || []).forEach(function(c){
     var sp = el("span");
-    sp.style.setProperty("--i", "var(" + i.c + ")");
-    sp.appendChild(el("i"));
-    sp.appendChild(document.createTextNode(i.nom));
+    var i = el("i");
+    i.style.setProperty("background", c.c);
+    sp.appendChild(i);
+    sp.appendChild(document.createTextNode(c.nom));
     lg.appendChild(sp);
   });
 }
 
 function renderRun(){
+  remplirClubs($("r-club"), function(){
+    S.run.lignes = cloneLignes(modeleActif());
+    renderRun(); renderBiblio();
+    toast("Déroulé chargé depuis le modèle de ce club.");
+  });
   renderLegende();
   var m = $("run");
   if(!m) return;
@@ -1341,25 +1426,31 @@ function renderRun(){
   S.run.lignes.forEach(function(l, i){
     m.appendChild(l.sec !== undefined ? sectionRun(l, i, edit) : ligneRun(l, i, edit));
   });
-
   if(!S.run.lignes.length){
-    m.appendChild(el("div", "empty", "Déroulé vide — repars du modèle avec le bouton Modèle."));
+    m.appendChild(el("div", "empty",
+      edit ? "Déroulé vide. Ajoute des lignes, ou pioche dans la bibliothèque."
+           : "Déroulé vide — passe en modification pour le construire."));
   }
 
   var z = $("r-actions");
   z.innerHTML = "";
   if(edit){
-    [["＋ Ligne", function(){ ajouterLigne({action:""}); }],
-     ["＋ Section", function(){
+    [["＋ Ligne", "primary", function(){ ajouterLigne({action:""}); }],
+     ["＋ Section", "ghost", function(){
         demander({titre:"Nouvelle section", message:"Titre de la section",
-                  placeholder:"ex. PROLONGATION", valider:"Ajouter"}).then(function(v){
+                  placeholder:"ex. 3ᵉ QUART-TEMPS", valider:"Ajouter"}).then(function(v){
           if(v && v.trim()) ajouterLigne({sec:v.trim().toUpperCase()});
         });
       }],
-     ["＋ Depuis la bibliothèque", function(){ insererDepuisBiblio(); }]
+     ["＋ Depuis la bibliothèque", "ghost", function(){ insererDepuisBiblio(); }],
+     ["Tout effacer", "ghost danger", function(){
+        confirmer({titre:"Vider le déroulé", danger:true, valider:"Tout effacer",
+                   message:"Toutes les lignes seront supprimées. Le modèle du club n'est pas touché."
+        }).then(function(ok){ if(ok){ S.run.lignes = []; save(); renderRun(); } });
+      }]
     ].forEach(function(b){
-      var bt = el("button", "btn sm" + (b[0].indexOf("Ligne") > 0 ? " primary" : " ghost"), b[0]);
-      bt.addEventListener("click", b[1]);
+      var bt = el("button", "btn sm " + b[1], b[0]);
+      bt.addEventListener("click", b[2]);
       z.appendChild(bt);
     });
   } else {
@@ -1379,12 +1470,13 @@ function renderRun(){
 
 function sectionRun(l, i, edit){
   var d = el("div", "runsec");
+  d.dataset = {i: i};
   if(edit){
+    d.appendChild(poignee(i));
     var inp = document.createElement("input");
-    inp.type = "text"; inp.value = l.sec; inp.style.flex = "1";
+    inp.type = "text"; inp.value = l.sec; inp.style.setProperty("flex", "1");
     inp.addEventListener("change", function(){ l.sec = inp.value; save(); });
     d.appendChild(inp);
-    d.appendChild(boutonsOrdre(i));
     var x = el("button", "sx x", "✕");
     x.addEventListener("click", function(){ supprimerLigne(i); });
     d.appendChild(x);
@@ -1396,13 +1488,13 @@ function sectionRun(l, i, edit){
 
 function ligneRun(l, i, edit){
   var d = el("div", "runrow" + (l.fait ? " fait" : "") + (edit ? " edite" : ""));
-  var q = intervenant(quiDe(l));
-  if(q){
-    d.style.setProperty("--i", "var(" + q.c + ")");
-    d.style.setProperty("--ibg", "var(" + q.c + "-bg)");
-  }
+  d.dataset = {i: i};
+  var c = cat(catDe(l));
+  d.style.setProperty("--i", c.c);
+  d.style.setProperty("--ibg", hexRgba(c.c, 0.12));
 
   if(edit){
+    d.appendChild(poignee(i));
     var rep = document.createElement("input");
     rep.type = "text";
     rep.value = l.avant != null ? "M-" + l.avant : (l.marque || "");
@@ -1415,21 +1507,21 @@ function ligneRun(l, i, edit){
       save(); renderRun();
     });
     d.appendChild(rep);
-    [["action", "Action"], ["musique", "Musique"], ["salle", "Salle"]].forEach(function(c){
+    [["action", "Action"], ["musique", "Musique"], ["salle", "Salle"]].forEach(function(ch){
       var inp = document.createElement("input");
-      inp.type = "text"; inp.value = l[c[0]] || ""; inp.placeholder = c[1];
+      inp.type = "text"; inp.value = l[ch[0]] || ""; inp.placeholder = ch[1];
       inp.addEventListener("change", function(){
-        if(inp.value.trim()) l[c[0]] = inp.value.trim(); else delete l[c[0]];
+        if(inp.value.trim()) l[ch[0]] = inp.value.trim(); else delete l[ch[0]];
         save();
       });
       d.appendChild(inp);
     });
     var sq = document.createElement("select");
-    INTERVENANTS.forEach(function(it){
+    (S.cats || []).forEach(function(it){
       var o = el("option", null, it.nom); o.value = it.id; sq.appendChild(o);
     });
-    sq.value = quiDe(l);
-    sq.addEventListener("change", function(){ l.qui = sq.value; save(); renderRun(); });
+    sq.value = catDe(l);
+    sq.addEventListener("change", function(){ l.cat = sq.value; save(); renderRun(); });
     d.appendChild(sq);
 
     var ta = document.createElement("textarea");
@@ -1441,12 +1533,15 @@ function ligneRun(l, i, edit){
     d.appendChild(ta);
 
     var col = el("div", "ord");
-    var up = el("button", null, "▲"); up.addEventListener("click", function(){ deplacerLigne(i, -1); });
-    var dn = el("button", null, "▼"); dn.addEventListener("click", function(){ deplacerLigne(i, 1); });
-    var bi = el("button", null, "☆"); bi.title = "Enregistrer dans la bibliothèque";
-    bi.addEventListener("click", function(){ versBiblio(l); });
-    var x = el("button", null, "✕"); x.addEventListener("click", function(){ supprimerLigne(i); });
-    [up, dn, bi, x].forEach(function(b){ col.appendChild(b); });
+    [["▲", function(){ deplacerLigne(i, -1); }],
+     ["▼", function(){ deplacerLigne(i, 1); }],
+     ["☆", function(){ versBiblio(l); }],
+     ["✕", function(){ supprimerLigne(i); }]].forEach(function(b){
+      var bt = el("button", null, b[0]);
+      if(b[0] === "☆") bt.title = "Enregistrer dans la bibliothèque du club";
+      bt.addEventListener("click", b[1]);
+      col.appendChild(bt);
+    });
     d.appendChild(col);
     return d;
   }
@@ -1459,26 +1554,26 @@ function ligneRun(l, i, edit){
     h.appendChild(document.createTextNode(l.marque || ""));
   }
   d.appendChild(h);
+
   var av = el("div", "a");
-  if(q){
-    var pil = el("span", "qui", q.nom);
-    pil.style.setProperty("--i", "var(" + q.c + ")");
-    av.appendChild(pil);
-  }
+  var pil = el("span", "catchip", c.nom);
+  pil.style.setProperty("background", c.c);
+  pil.style.setProperty("color", texteSur(c.c));
+  av.appendChild(pil);
   av.appendChild(document.createTextNode(l.action || ""));
   d.appendChild(av);
+
   d.appendChild(el("div", "m", l.musique || ""));
   d.appendChild(el("div", "sl", l.salle || ""));
 
-  // Commentaire permanent, puis note du soir : saisissable sans quitter la lecture.
   var cm = el("div", "cm");
   if(l.com) cm.appendChild(document.createTextNode(l.com));
   if(l.note) cm.appendChild(el("span", "note", l.note));
   var bn = el("button", "btnote", l.note ? "Modifier la note" : "＋ Note du soir");
   bn.addEventListener("click", function(){
-    demander({titre:"Note du soir", message:(l.action || "Cette étape")
-              + " — effacée quand tu repars du modèle.",
-              valeur:l.note || "", placeholder:"ex. remercier le groupe scolaire présent",
+    demander({titre:"Note du soir",
+              message:(l.action || "Cette étape") + " — effacée quand tu repars du modèle.",
+              valeur:l.note || "", placeholder:"ex. remercier le groupe scolaire",
               valider:"Noter"}).then(function(v){
       if(v === null) return;
       if(v.trim()) l.note = v.trim(); else delete l.note;
@@ -1499,13 +1594,49 @@ function ligneRun(l, i, edit){
   return d;
 }
 
-function boutonsOrdre(i){
-  var col = el("div", "ord");
-  var up = el("button", null, "▲"); up.addEventListener("click", function(){ deplacerLigne(i, -1); });
-  var dn = el("button", null, "▼"); dn.addEventListener("click", function(){ deplacerLigne(i, 1); });
-  col.appendChild(up); col.appendChild(dn);
-  return col;
+/* ---- glisser-déposer, au pointeur pour fonctionner aussi au doigt ---- */
+var GLISSE = null;
+function poignee(i){
+  var p = el("button", "poignee", "⠿");
+  p.title = "Glisser pour déplacer";
+  p.addEventListener("pointerdown", function(e){
+    if(e.preventDefault) e.preventDefault();
+    GLISSE = {depuis: i, vers: i};
+    document.body.classList.add("endrag");
+    if(e.pointerId != null && p.setPointerCapture) p.setPointerCapture(e.pointerId);
+    var lignes = $("run").children;
+    function bouge(ev){
+      if(!GLISSE) return;
+      var y = ev.clientY;
+      for(var k = 0; k < lignes.length; k++){
+        var r = lignes[k].getBoundingClientRect ? lignes[k].getBoundingClientRect() : null;
+        if(r && y >= r.top && y <= r.bottom){ GLISSE.vers = k; break; }
+      }
+      for(var j = 0; j < lignes.length; j++){
+        lignes[j].classList.remove("cible");
+        lignes[j].classList.remove("glisse");
+      }
+      if(lignes[GLISSE.depuis]) lignes[GLISSE.depuis].classList.add("glisse");
+      if(lignes[GLISSE.vers]) lignes[GLISSE.vers].classList.add("cible");
+    }
+    function lache(){
+      window.removeEventListener("pointermove", bouge);
+      window.removeEventListener("pointerup", lache);
+      document.body.classList.remove("endrag");
+      if(GLISSE && GLISSE.vers !== GLISSE.depuis){
+        var it = S.run.lignes.splice(GLISSE.depuis, 1)[0];
+        S.run.lignes.splice(GLISSE.vers, 0, it);
+        save();
+      }
+      GLISSE = null;
+      renderRun();
+    }
+    window.addEventListener("pointermove", bouge);
+    window.addEventListener("pointerup", lache);
+  });
+  return p;
 }
+
 function deplacerLigne(i, d){
   var k = i + d;
   if(k < 0 || k >= S.run.lignes.length) return;
@@ -1514,53 +1645,61 @@ function deplacerLigne(i, d){
   S.run.lignes[k] = t;
   save(); renderRun();
 }
-function supprimerLigne(i){
-  S.run.lignes.splice(i, 1);
-  save(); renderRun();
-}
+function supprimerLigne(i){ S.run.lignes.splice(i, 1); save(); renderRun(); }
 function ajouterLigne(modele){
-  var l = cloneLignes([modele])[0];
-  S.run.lignes.push(l);
+  S.run.lignes.push(cloneLignes([modele])[0]);
   save(); renderRun();
 }
 
-/* ---- bibliothèque ---- */
+/* ---- bibliothèque, propre à chaque club ---- */
 function versBiblio(l){
   var b = cloneLignes([l])[0];
-  delete b.avant; delete b.marque; delete b.fait;
-  b.titre = l.action || "Bloc";
-  S.biblio.push(b);
-  S.biblio.sort(function(a, c){ return (a.titre || "").localeCompare(c.titre || "", "fr"); });
+  delete b.avant; delete b.marque;
+  b.titre = l.action || "Élément";
+  b.cat = catDe(l);
+  biblioActive().push(b);
+  trierBiblio();
   save(); renderBiblio();
-  toast("« " + b.titre + " » ajouté à la bibliothèque.");
+  toast("« " + b.titre + " » ajouté à la bibliothèque de " + clubActif().nom + ".");
+}
+function trierBiblio(){
+  biblioActive().sort(function(a, b){
+    var ca = cat(a.cat).nom, cb = cat(b.cat).nom;
+    return ca === cb ? (a.titre || "").localeCompare(b.titre || "", "fr") : ca.localeCompare(cb, "fr");
+  });
 }
 
 function insererDepuisBiblio(){
-  if(!S.biblio.length){
-    toast("La bibliothèque est vide. Depuis une ligne, le ☆ l'y enregistre.");
+  var liste = biblioActive();
+  if(!liste.length){
+    toast("La bibliothèque de ce club est vide. Le ☆ d'une ligne l'y enregistre.");
     return;
   }
   dialogue(function(dg, fermer){
-    dg.appendChild(el("h3", null, "Insérer un bloc"));
+    dg.appendChild(el("h3", null, "Piocher dans la bibliothèque"));
     var body = el("div", "body");
     var rech = document.createElement("input");
     rech.type = "text"; rech.className = "din"; rech.placeholder = "Rechercher…";
     body.appendChild(rech);
-    var liste = el("div", "picklist");
-    body.appendChild(liste);
+    var box = el("div", "picklist");
+    body.appendChild(box);
     function dessiner(){
-      liste.innerHTML = "";
+      box.innerHTML = "";
       var q = sansAccent(rech.value.trim());
-      S.biblio.filter(function(b){
+      liste.filter(function(b){
         return !q || sansAccent((b.titre || "") + " " + (b.com || "")).indexOf(q) >= 0;
       }).forEach(function(b){
+        var c = cat(b.cat);
         var bt = el("button", null);
-        bt.appendChild(el("span", "pn", b.titre || "Bloc"));
-        if(b.musique) bt.appendChild(el("span", "pp", b.musique));
+        var pil = el("span", "catchip", c.nom);
+        pil.style.setProperty("background", c.c);
+        pil.style.setProperty("color", texteSur(c.c));
+        bt.appendChild(pil);
+        bt.appendChild(el("span", "pn", b.titre || "Élément"));
         bt.addEventListener("click", function(){ fermer(b); });
-        liste.appendChild(bt);
+        box.appendChild(bt);
       });
-      if(!liste.children.length) liste.appendChild(el("div", "vide", "Aucun bloc ne correspond."));
+      if(!box.children.length) box.appendChild(el("div", "vide", "Aucun élément ne correspond."));
     }
     rech.addEventListener("input", dessiner);
     dessiner();
@@ -1573,33 +1712,63 @@ function insererDepuisBiblio(){
     setTimeout(function(){ rech.focus(); }, 30);
   }).then(function(b){
     if(!b) return;
-    ajouterLigne({marque:"TM", action:b.action || b.titre, musique:b.musique, salle:b.salle, com:b.com});
-    toast("Bloc inséré en fin de déroulé.");
+    ajouterLigne({marque:"", action:b.action || b.titre, musique:b.musique,
+                  salle:b.salle, com:b.com, cat:b.cat});
+    toast("Ajouté en fin de déroulé — glisse-le à sa place.");
   });
 }
 
 function renderBiblio(){
   var m = $("l-biblio");
   if(!m) return;
+  remplirClubs($("b-club"), function(){ renderBiblio(); renderRun(); });
+
+  var fc = $("b-cat");
+  if(fc && !fc._lie){
+    fc._lie = true;
+    fc.addEventListener("change", renderBiblio);
+  }
+  if(fc){
+    var garde = fc.value;
+    fc.innerHTML = "";
+    var t = el("option", null, "Toutes les catégories"); t.value = ""; fc.appendChild(t);
+    (S.cats || []).forEach(function(c){
+      var o = el("option", null, c.nom); o.value = c.id; fc.appendChild(o);
+    });
+    fc.value = garde || "";
+  }
+
   m.innerHTML = "";
+  var liste = biblioActive();
   var q = sansAccent(($("b-search") ? $("b-search").value : "").trim());
-  var vus = S.biblio.filter(function(b){
+  var fcat = fc ? fc.value : "";
+  var vus = liste.filter(function(b){
+    if(fcat && b.cat !== fcat) return false;
     return !q || sansAccent((b.titre || "") + " " + (b.com || "")).indexOf(q) >= 0;
   });
-  $("n-biblio").textContent = S.biblio.length + " bloc" + (S.biblio.length > 1 ? "s" : "");
+  $("n-biblio").textContent = clubActif().nom + " — " + liste.length
+    + " élément" + (liste.length > 1 ? "s" : "");
 
-  if(!S.biblio.length){
+  if(!liste.length){
     m.appendChild(el("div", "empty",
-      "Bibliothèque vide. Dans le Conducteur, passe en modification et clique ☆ sur une ligne pour l'enregistrer ici."));
+      "Bibliothèque vide pour " + clubActif().nom + ". Ajoute un élément ci-dessus, "
+      + "ou enregistre une ligne du conducteur avec le ☆."));
     return;
   }
-  if(!vus.length){ m.appendChild(el("div", "empty", "Aucun bloc ne correspond.")); return; }
+  if(!vus.length){ m.appendChild(el("div", "empty", "Aucun élément ne correspond.")); return; }
 
   var ul = el("ul", "blocs");
   vus.forEach(function(b){
+    var c = cat(b.cat);
     var li = el("li");
     var d = el("div", "b");
-    d.appendChild(el("b", null, b.titre || "Bloc"));
+    var tete = el("div");
+    var pil = el("span", "catchip", c.nom);
+    pil.style.setProperty("background", c.c);
+    pil.style.setProperty("color", texteSur(c.c));
+    tete.appendChild(pil);
+    tete.appendChild(el("b", null, b.titre || "Élément"));
+    d.appendChild(tete);
     var tags = [];
     if(b.musique) tags.push("♪ " + b.musique);
     if(b.salle) tags.push("Salle : " + b.salle);
@@ -1609,9 +1778,10 @@ function renderBiblio(){
 
     var ins = el("button", "btn sm", "Insérer");
     ins.addEventListener("click", function(){
-      ajouterLigne({marque:"TM", action:b.action || b.titre, musique:b.musique, salle:b.salle, com:b.com});
+      ajouterLigne({marque:"", action:b.action || b.titre, musique:b.musique,
+                    salle:b.salle, com:b.com, cat:b.cat});
       gotoTab("cond");
-      toast("Bloc inséré en fin de déroulé.");
+      toast("Ajouté en fin de déroulé.");
     });
     li.appendChild(ins);
 
@@ -1622,9 +1792,10 @@ function renderBiblio(){
     var x = el("button", "btn sm ghost danger", "Retirer");
     x.addEventListener("click", function(){
       confirmer({titre:"Retirer de la bibliothèque", danger:true, valider:"Retirer",
-                 message:"« " + (b.titre || "Bloc") + " » sera supprimé."}).then(function(ok){
+                 message:"« " + (b.titre || "Élément") + " » sera supprimé."}).then(function(ok){
         if(!ok) return;
-        S.biblio = S.biblio.filter(function(x2){ return x2.id !== b.id; });
+        var cl = clubActif();
+        cl.biblio = cl.biblio.filter(function(y){ return y.id !== b.id; });
         save(); renderBiblio();
       });
     });
@@ -1636,15 +1807,24 @@ function renderBiblio(){
 
 function editerBloc(b){
   dialogue(function(dg, fermer){
-    dg.appendChild(el("h3", null, b ? "Modifier le bloc" : "Nouveau bloc"));
+    dg.appendChild(el("h3", null, b ? "Modifier l'élément" : "Nouvel élément"));
     var body = el("div", "body");
     var champs = {};
-    [["titre", "Titre"], ["musique", "Musique"], ["salle", "Salle"]].forEach(function(c){
-      var lab = el("label", "dlab", c[1]);
+    var lc = el("label", "dlab", "Catégorie");
+    var sc = document.createElement("select");
+    sc.className = "din";
+    (S.cats || []).forEach(function(c){
+      var o = el("option", null, c.nom); o.value = c.id; sc.appendChild(o);
+    });
+    sc.value = (b && b.cat) || (S.cats[0] && S.cats[0].id);
+    lc.appendChild(sc); body.appendChild(lc);
+
+    [["titre", "Titre"], ["musique", "Musique"], ["salle", "Salle"]].forEach(function(ch){
+      var lab = el("label", "dlab", ch[1]);
       var i = document.createElement("input");
-      i.type = "text"; i.className = "din"; i.value = (b && b[c[0]]) || "";
+      i.type = "text"; i.className = "din"; i.value = (b && b[ch[0]]) || "";
       lab.appendChild(i); body.appendChild(lab);
-      champs[c[0]] = i;
+      champs[ch[0]] = i;
     });
     var lab = el("label", "dlab", "Commentaire");
     var ta = document.createElement("textarea");
@@ -1652,21 +1832,23 @@ function editerBloc(b){
     lab.appendChild(ta); body.appendChild(lab);
     champs.com = ta;
     dg.appendChild(body);
+
     var foot = el("div", "foot");
     var a = el("button", "btn ghost", "Annuler");
     a.addEventListener("click", function(){ fermer(null); });
     var ok = el("button", "btn primary", "Enregistrer");
     ok.addEventListener("click", function(){
-      if(!champs.titre.value.trim()){ toast("Donne un titre au bloc."); return; }
+      if(!champs.titre.value.trim()){ toast("Donne un titre à l'élément."); return; }
       var cible = b || {id: uid("b")};
       cible.titre = champs.titre.value.trim();
       cible.action = cible.titre;
+      cible.cat = sc.value;
       ["musique", "salle", "com"].forEach(function(k){
         var v = champs[k].value.trim();
         if(v) cible[k] = v; else delete cible[k];
       });
-      if(!b) S.biblio.push(cible);
-      S.biblio.sort(function(x, y){ return (x.titre || "").localeCompare(y.titre || "", "fr"); });
+      if(!b) biblioActive().push(cible);
+      trierBiblio();
       save(); renderBiblio(); fermer(null);
     });
     foot.appendChild(a); foot.appendChild(ok);
@@ -1675,40 +1857,87 @@ function editerBloc(b){
   });
 }
 
-/* ---- modèle de saison ---- */
-function menuModele(){
+/* ---- catégories : noms et couleurs, entièrement modifiables ---- */
+function gererCats(){
   dialogue(function(dg, fermer){
-    dg.appendChild(el("h3", null, "Modèle de saison"));
+    dg.appendChild(el("h3", null, "Catégories et couleurs"));
     var body = el("div", "body");
     body.appendChild(el("p", "msg",
-      "Le modèle est ton déroulé type. Tu le dupliques pour chaque rencontre, puis tu ajustes "
-      + "les temps-morts et les animations du soir."));
-    body.appendChild(el("div", "q", "Modèle actuel : " + S.modele.length + " lignes."));
+      "Chaque catégorie porte sa couleur dans le conducteur : filet, pastille et fond de ligne."));
+    var box = el("div");
+    body.appendChild(box);
+    function dessiner(){
+      box.innerHTML = "";
+      S.cats.forEach(function(c, i){
+        var li = el("div", "catline");
+        var co = document.createElement("input");
+        co.type = "color"; co.value = c.c;
+        co.addEventListener("change", function(){ c.c = co.value; save(); renderRun(); renderBiblio(); });
+        li.appendChild(co);
+        var nm = document.createElement("input");
+        nm.type = "text"; nm.value = c.nom;
+        nm.addEventListener("change", function(){
+          c.nom = nm.value.trim() || c.nom; save(); renderRun(); renderBiblio();
+        });
+        li.appendChild(nm);
+        var x = el("button", "btn sm ghost danger", "✕");
+        x.addEventListener("click", function(){
+          if(S.cats.length < 2){ toast("Garde au moins une catégorie."); return; }
+          S.cats.splice(i, 1);
+          save(); dessiner(); renderRun(); renderBiblio();
+        });
+        li.appendChild(x);
+        box.appendChild(li);
+      });
+    }
+    dessiner();
+    var plus = el("button", "btn sm ghost", "＋ Nouvelle catégorie");
+    plus.addEventListener("click", function(){
+      S.cats.push({id: uid("k"), nom: "Nouvelle", c: "#888888"});
+      save(); dessiner(); renderRun();
+    });
+    body.appendChild(plus);
+    dg.appendChild(body);
+    var foot = el("div", "foot");
+    var ok = el("button", "btn primary", "Fermer");
+    ok.addEventListener("click", function(){ fermer(null); });
+    foot.appendChild(ok);
+    dg.appendChild(foot);
+  });
+}
+
+/* ---- modèle, par club ---- */
+function menuModele(){
+  var cl = clubActif();
+  dialogue(function(dg, fermer){
+    dg.appendChild(el("h3", null, "Modèle — " + cl.nom));
+    var body = el("div", "body");
+    body.appendChild(el("p", "msg",
+      "Chaque club a son propre modèle : son déroulé type, ses textes, ses habitudes."));
+    body.appendChild(el("div", "q", "Modèle de " + cl.nom + " : " + modeleActif().length + " lignes."));
     dg.appendChild(body);
     var foot = el("div", "foot");
     var a = el("button", "btn ghost", "Annuler");
     a.addEventListener("click", function(){ fermer(null); });
-    var maj = el("button", "btn ghost", "Enregistrer ce déroulé comme modèle");
+    var maj = el("button", "btn ghost", "Enregistrer comme modèle");
     maj.addEventListener("click", function(){
       fermer(null);
-      confirmer({titre:"Remplacer le modèle", valider:"Remplacer",
-        message:"Le déroulé affiché deviendra le modèle de saison, utilisé pour les prochaines rencontres."
-      }).then(function(ok){
+      confirmer({titre:"Remplacer le modèle de " + cl.nom, valider:"Remplacer",
+        message:"Le déroulé affiché deviendra le modèle de ce club."}).then(function(ok){
         if(!ok) return;
-        S.modele = cloneLignes(S.run.lignes);
-        S.modele.forEach(function(l){ delete l.fait; });
-        save(); toast("Modèle enregistré.");
+        cl.modele = cloneLignes(S.run.lignes);
+        save(); toast("Modèle de " + cl.nom + " enregistré.");
       });
     });
     var neuf = el("button", "btn primary", "Repartir du modèle");
     neuf.addEventListener("click", function(){
       fermer(null);
       confirmer({titre:"Nouveau déroulé", danger:true, valider:"Repartir du modèle",
-        message:"Le déroulé de la rencontre en cours sera remplacé par le modèle. Tes cases cochées seront perdues."
-      }).then(function(ok){
+        message:"Le déroulé en cours sera remplacé par le modèle de " + cl.nom
+                + ". Tes notes du soir et tes cases cochées seront perdues."}).then(function(ok){
         if(!ok) return;
-        S.run.lignes = cloneLignes(S.modele);
-        save(); renderRun(); toast("Déroulé réinitialisé depuis le modèle.");
+        S.run.lignes = cloneLignes(modeleActif());
+        save(); renderRun(); toast("Déroulé réinitialisé.");
       });
     });
     foot.appendChild(a); foot.appendChild(maj); foot.appendChild(neuf);
@@ -2303,6 +2532,7 @@ $("r-edit").addEventListener("click", function(){
   save(); renderRun();
 });
 $("r-modele").addEventListener("click", menuModele);
+$("r-cats").addEventListener("click", gererCats);
 $("b-add").addEventListener("click", function(){ editerBloc(null); });
 $("b-search").addEventListener("input", renderBiblio);
 $("c-theme").addEventListener("click", function(){
