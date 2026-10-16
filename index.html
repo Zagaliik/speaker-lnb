@@ -341,6 +341,12 @@ li.is-five{background:var(--accent-soft)}
   color:var(--muted);font-size:13px;display:grid;place-items:center;cursor:grab;touch-action:none;
 }
 .runrow.glisse{opacity:.5}
+.runrow.neuve,.runsec.neuve{animation:surligne 2.2s ease-out}
+@keyframes surligne{
+  0%,55%{background:var(--accent-soft);box-shadow:inset 4px 0 0 var(--accent)}
+  100%{background:var(--ibg,transparent)}
+}
+@media (prefers-reduced-motion:reduce){.runrow.neuve,.runsec.neuve{animation:none;outline:2px solid var(--accent)}}
 .runrow.cible{box-shadow:inset 4px 0 0 var(--i,transparent), 0 -2px 0 var(--accent)}
 .catchip{
   display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
@@ -1384,7 +1390,7 @@ function heureDe(avant){
 }
 
 /* ---- rendu ---- */
-function remplirClubs(sel, onChange){
+function remplirClubs(sel){
   if(!sel) return;
   sel.innerHTML = "";
   (S.clubs || []).forEach(function(c){
@@ -1396,11 +1402,34 @@ function remplirClubs(sel, onChange){
     sel._lie = true;
     sel.addEventListener("change", function(){
       if(sel.value === "__new"){ creerClub(); return; }
-      S.clubActif = sel.value;
-      save(); onChange();
+      changerClub(sel.value);
     });
   }
 }
+
+/** Le conducteur appartient a une rencontre, donc a un club : changer de club
+    charge son deroule. Sans cela le selecteur affiche un club et la liste un autre. */
+function changerClub(id){
+  if(id === S.clubActif){ renderRun(); renderBiblio(); return; }
+  var enCours = (S.run.lignes || []).some(function(l){ return l.fait || l.note; });
+  function basculer(){
+    S.clubActif = id;
+    S.run.lignes = cloneLignes(modeleActif());
+    save(); renderRun(); renderBiblio();
+    var cl = clubActif();
+    toast(modeleActif().length
+      ? "Déroulé de " + cl.nom + " chargé."
+      : cl.nom + " n'a pas encore de modèle — construis son déroulé.");
+  }
+  if(!enCours){ basculer(); return; }
+  confirmer({titre:"Changer de club", danger:true, valider:"Changer de club",
+    message:"Le déroulé en cours contient des notes ou des étapes cochées. "
+            + "Charger le club suivant les effacera."
+  }).then(function(ok){
+    if(ok) basculer(); else { renderRun(); renderBiblio(); }
+  });
+}
+
 function creerClub(){
   demander({titre:"Nouveau club", message:"Nom du club",
             placeholder:"ex. Chartres", valider:"Créer"}).then(function(v){
@@ -1408,8 +1437,11 @@ function creerClub(){
     var c = {id: uid("c"), nom: v.trim(), modele: [], biblio: []};
     S.clubs.push(c);
     S.clubActif = c.id;
+    S.run.lignes = [];          // son modele est vide : le conducteur doit l'etre aussi
+    S.runEdit = true;           // il n'y a rien a lire, tout a construire
+    $("r-edit").textContent = "Terminer les modifications";
     save(); renderRun(); renderBiblio();
-    toast("Club créé. Sa bibliothèque et son modèle sont vides.");
+    toast("Club créé. Ajoute ses éléments à la bibliothèque, puis monte son déroulé.");
   });
 }
 
@@ -1428,11 +1460,7 @@ function renderLegende(){
 }
 
 function renderRun(){
-  remplirClubs($("r-club"), function(){
-    S.run.lignes = cloneLignes(modeleActif());
-    renderRun(); renderBiblio();
-    toast("Déroulé chargé depuis le modèle de ce club.");
-  });
+  remplirClubs($("r-club"));
   renderLegende();
   var m = $("run");
   if(!m) return;
@@ -1664,8 +1692,18 @@ function deplacerLigne(i, d){
 }
 function supprimerLigne(i){ S.run.lignes.splice(i, 1); save(); renderRun(); }
 function ajouterLigne(modele){
-  S.run.lignes.push(cloneLignes([modele])[0]);
+  var l = cloneLignes([modele])[0];
+  S.run.lignes.push(l);
   save(); renderRun();
+  // Ajoutee en fin de liste, elle passerait inapercue sous des dizaines de lignes.
+  var box = $("run");
+  var der = box && box.children[box.children.length - 1];
+  if(der){
+    der.classList.add("neuve");
+    if(der.scrollIntoView) der.scrollIntoView({block:"center", behavior:"smooth"});
+    setTimeout(function(){ der.classList.remove("neuve"); }, 2200);
+  }
+  return l;
 }
 
 /* ---- bibliothèque, propre à chaque club ---- */
@@ -1738,7 +1776,7 @@ function insererDepuisBiblio(){
 function renderBiblio(){
   var m = $("l-biblio");
   if(!m) return;
-  remplirClubs($("b-club"), function(){ renderBiblio(); renderRun(); });
+  remplirClubs($("b-club"));
 
   var fc = $("b-cat");
   if(fc && !fc._lie){
