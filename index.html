@@ -619,6 +619,8 @@ ul.people .who .r{font-size:11.5px;color:var(--muted)}
     <div class="card">
       <header><h2>Données LNB</h2></header>
       <div class="rows">
+        <div class="row"><span class="k">Version de l'application</span>
+          <span class="v" id="d-version">—</span></div>
         <div class="row"><span class="k">Saison</span><span class="v" id="d-saison">—</span></div>
         <div class="row"><span class="k">Dernière mise à jour</span><span class="v" id="d-maj">—</span>
           <span class="a"><button class="btn" id="d-sync">Actualiser</button></span></div>
@@ -2791,6 +2793,14 @@ function renderRepertoire(ul, cat, q, counter){
 
 /* ============ données ============ */
 function renderData(){
+  // Repere de version : permet de verifier d'un coup d'oeil qu'un rechargement
+  // a bien pris, plutot que de deviner.
+  var dv = $("d-version");
+  if(dv){
+    var d0 = new Date(document.lastModified);
+    dv.textContent = isNaN(d0) ? "—"
+      : d0.toLocaleString("fr-FR", {dateStyle:"long", timeStyle:"short"});
+  }
   if(!DATA) return;
   $("d-saison").textContent = DATA.saison || "—";
   var d = DATA.genere_le ? new Date(DATA.genere_le) : null;

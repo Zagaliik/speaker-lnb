@@ -32,7 +32,7 @@ self.addEventListener("fetch", function(e){
   // Donnees LNB : on prefere le reseau, mais on retombe toujours sur le cache.
   if(url.pathname.indexOf("lnb-data.json") >= 0){
     e.respondWith(
-      fetch(req).then(function(res){
+      fetch(new Request(req.url, {cache:"reload"})).then(function(res){
         var copy = res.clone();
         caches.open(CACHE).then(function(c){ c.put(req, copy); });
         return res;
@@ -64,7 +64,9 @@ self.addEventListener("fetch", function(e){
 
   if(url.origin === location.origin && estLaPage){
     e.respondWith(
-      fetch(req).then(function(res){
+      // cache:"reload" force un aller au serveur : sans cela la requete respecte
+      // le max-age=600 de GitHub Pages et renvoie la page d'il y a dix minutes.
+      fetch(new Request(req.url, {cache:"reload"})).then(function(res){
         if(res && res.status === 200){
           var copie = res.clone();
           caches.open(CACHE).then(function(c){ c.put("./index.html", copie); });
